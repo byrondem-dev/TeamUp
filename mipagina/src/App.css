@@ -1,0 +1,444 @@
+/* ===== HERO GENERAL ===== */
+.hero {
+  /* Fondo negro por si la imagen tarda en cargar */
+  background-color: #000;
+
+  /* Imagen de fondo */
+  background-image: url("https://assets.goal.com/images/v3/blt723cffa4086be61e/GOAL_-_Blank_WEB_-_Facebook_-_2024-02-26T070323.579.png?auto=webp&format=pjpg&width=3840&quality=60");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  /* CENTRADO TOTAL */
+  justify-content: center;
+  align-items: center;
+
+  color: #ff69b4; /* texto rosado */
+  font-family: 'Troupers', 'Segoe UI', Arial, sans-serif;
+  position: relative;
+  text-align: center;
+
+  padding-top: 60px; /* espacio para navbar */
+}
+
+/* Overlay negro más oscuro con degradado */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(0,0,0,0.4),
+    rgba(0,0,0,0.8)
+  );
+  z-index: 1;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 60px;
+  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,0.7);
+  border-bottom: 1px solid rgba(255,105,180,0.4);
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #ff69b4;
+  letter-spacing: 1px;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #ff69b4;
+  border: 2px solid #ff69b4;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-outline:hover {
+  background: #ff69b4;
+  color: #000;
+  transform: scale(1.05);
+}
+
+/* ===== HERO CONTENT ===== */
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  padding: 0 20px;
+  margin-top: 20px; /* separa del navbar */
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 16px;
+  line-height: 1.2;
+  color: #ff69b4;
+}
+
+.hero-title span {
+  color: #ff1493; /* rosa intenso */
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 32px;
+  color: #ffb6c1; /* rosa suave */
+}
+
+/* ===== BOTONES PRINCIPALES ===== */
+.hero-buttons {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-green {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+}
+
+.btn-primary {
+  background: #ff69b4;
+  color: #000;
+}
+
+.btn-primary:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #ff69b4;
+  color: #000;
+}
+
+.btn-secondary:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+}
+
+.btn-green {
+  background: #ff69b4;
+  color: #000;
+  margin-top: 8px;
+}
+
+.btn-green:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+}
+
+/* Extra section */
+.hero-extra {
+  margin-top: 16px;
+  font-size: 1rem;
+  color: #ffb6c1;
+}
+
+/* ===== FOOTER ===== */
+.landing-footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 18px 0;
+  font-size: 0.9rem;
+  color: #ff69b4;
+  margin-top: auto;
+}
+
+/* ===== LOGIN/REGISTER HERO ===== */
+.login-hero {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Poppins', sans-serif; /* Fuente más elegante */
+  color: #ff69b4;
+  min-height: 100vh;
+}
+
+/* Overlay */
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1;
+}
+
+/* Tarjeta centrada */
+.login-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(0,0,0,0.85);
+  padding: 40px 30px;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Inputs */
+.login-form input {
+  display: block;
+  width: 95%;
+  padding: 12px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #111;
+  color: #ff69b4;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.login-form input::placeholder {
+  color: #ff69b4;
+  opacity: 0.7;
+}
+
+/* Botones animados (para forms) */
+.login-form .btn-primary,
+.login-form .btn-secondary,
+.login-form .btn-green {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  background: #ff69b4;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.login-form .btn-primary:hover,
+.login-form .btn-secondary:hover,
+.login-form .btn-green:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+/* Botón Home */
+.home-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  background: transparent;
+  border: 2px solid black;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease, filter 0.3s ease;
+}
+
+.home-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  filter: brightness(1.4);
+}
+
+/* ===== BOTONES ===== */
+.btn-primary,
+.btn-secondary,
+.btn-green,
+.btn-outline {
+  text-decoration: none; /* Quita la línea debajo del texto */
+}
+
+/* Ya tu CSS existente para botones */
+.btn-primary {
+  background: #ff69b4;
+  color: #000;
+  border-radius: 8px;
+  padding: 12px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+}
+
+.btn-primary:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #ff69b4;
+  color: #000;
+  border-radius: 8px;
+  padding: 12px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+}
+
+.btn-secondary:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+}
+
+.btn-green {
+  display: inline-block;       /* necesario para Link */
+  text-decoration: none;       /* quita la línea debajo del texto */
+  background: #ff69b4;
+  color: #000;
+  border-radius: 8px;
+  padding: 12px 26px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+}
+
+.btn-green:hover {
+  background: #ff1493;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,20,147,0.5); /* resalta el hover */
+}
+
+.input-select {
+  display: block;
+  width: 95%;
+  padding: 12px 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #111;
+  color: #ff69b4;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.input-select option {
+  color: #ff69b4;
+}
+
+/* ===== TARJETAS "LO QUE PUEDES HACER" ===== */
+.feature-card {
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+/* Glow extra detrás de la tarjeta */
+.feature-card::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  background: radial-gradient(
+    circle at top,
+    rgba(255, 105, 180, 0.6),
+    transparent 60%
+  );
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.25s ease;
+}
+
+/* Efecto al pasar el mouse */
+.feature-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 0 30px rgba(255, 105, 180, 0.6);
+  background: #181018;
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+/* ===== UNIFICAR ANIMACIÓN DE BOTONES EN LAS TARJETAS + PULSE ===== */
+.feature-card .btn-primary,
+.feature-card .btn-secondary,
+.feature-card .btn-green {
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+  transform: translateY(0);
+}
+
+/* Animación de elevación y brillo */
+.feature-card .btn-primary:hover,
+.feature-card .btn-secondary:hover,
+.feature-card .btn-green:hover {
+  transform: translateY(-4px);
+  background: #ff1493;
+  box-shadow: 0 6px 18px rgba(255,20,147,0.6);
+  filter: brightness(1.15);
+  animation: pulseGlow 0.8s ease-in-out;
+}
+
+/* Keyframes para el rebote suave */
+@keyframes pulseGlow {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 4px 12px rgba(255,105,180,0.4);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 8px 22px rgba(255,20,147,0.7);
+  }
+  100% {
+    transform: translateY(-4px) scale(1);
+    box-shadow: 0 6px 18px rgba(255,20,147,0.6);
+  }
+}
+
+/* ===== ICONO BLANCO EN INPUT DE FECHA ===== */
+input[type="date"] {
+  color: #ff69b4;         /* texto rosado */
+  background-color: #111; /* caja oscura si no la sobreescriben con inline */
+  border-color: #ff69b4;
+}
+
+/* iconito del calendario blanco */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);      /* invierte el icono y se ve blanco */
+}
