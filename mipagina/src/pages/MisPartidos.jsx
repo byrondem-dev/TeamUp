@@ -11,6 +11,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ===== helpers de fecha/hora (reutilizados) =====
 function formatFechaLarga(fechaRaw) {
@@ -75,6 +76,52 @@ function formatHora(ts) {
   }
 }
 
+// ==== mismos días/horas que en Perfil.jsx para mostrar disponibilidad ====
+const DIAS = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+
+const HORAS = [
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+  "22:00",
+  "23:00",
+];
+
+// Formatea el JSON de disponibilidad (el mismo que guarda Perfil.jsx)
+function formatearDisponibilidad(disp) {
+  if (!disp || typeof disp !== "object") return "";
+
+  const lineas = [];
+
+  DIAS.forEach((dia) => {
+    const horasDia = disp[dia] || {};
+    const activas = HORAS.filter((h) => horasDia[h]);
+
+    if (activas.length > 0) {
+      lineas.push(`${dia}: ${activas.join(", ")}`);
+    }
+  });
+
+  if (lineas.length === 0) return "";
+  return lineas.join(" · ");
+}
+
 export default function MisPartidos() {
   const navigate = useNavigate();
 
@@ -97,6 +144,11 @@ export default function MisPartidos() {
   const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState("");
   const [jugadorSeleccionadoId, setJugadorSeleccionadoId] = useState(null);
+
+  // Siempre empezar arriba de la página
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Cargar mis partidos desde /api/partidos/mios
   useEffect(() => {
@@ -196,6 +248,33 @@ export default function MisPartidos() {
     }
   };
 
+  // 🗑 Borrar partido del HISTORIAL (pasados)
+  const handleBorrarPartidoPasado = async (p) => {
+    if (!p) return;
+
+    if (
+      !window.confirm(
+        "¿Seguro que quieres borrar este partido pasado de tu lista?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await Api.borrarPartidoPasado(p.id); // backend: DELETE /api/partidos/mios/:id
+
+      // Actualizamos estado para que desaparezca de la UI
+      setPartidos((prev) => prev.filter((part) => part.id !== p.id));
+
+      if (seleccionado?.id === p.id) {
+        setSeleccionado(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "No se pudo borrar el partido.");
+    }
+  };
+
   const handleEnviarMensaje = async (e) => {
     e.preventDefault();
     if (!seleccionado) return;
@@ -224,9 +303,7 @@ export default function MisPartidos() {
     try {
       setLoadingPerfil(true);
       setErrorPerfil("");
-      // ⚠️ aquí usamos el nombre correcto del método del Api
       const data = await Api.perfilJugador(pp.usuario_id);
-      // guardamos también el usuario_id para poder usarlo si hace falta
       setJugadorPerfil(data ? { ...data, usuario_id: pp.usuario_id } : null);
     } catch (err) {
       console.error(err);
@@ -243,21 +320,36 @@ export default function MisPartidos() {
     <div style={pageBg}>
       <div style={overlay} />
 
-      {/* Botón inicio */}
-      <button onClick={() => navigate("/")} style={homeBtn}>
+      {/* Botón inicio con animación */}
+      <motion.button
+        onClick={() => navigate("/")}
+        style={homeBtn}
+        whileHover={{ scale: 1.05, x: 2 }}
+        whileTap={{ scale: 0.95 }}
+      >
         <Home size={18} />
         <span>Inicio</span>
-      </button>
+      </motion.button>
 
-      <div style={card}>
+      <motion.div
+        style={card}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
         <div style={topRow}>
           <button onClick={() => navigate(-1)} style={backBtn}>
             ⬅ Volver
           </button>
           <h1 style={titleText}>Mis partidos</h1>
-          <button style={miniBtn} onClick={() => navigate("/buscar")}>
+          <motion.button
+            style={miniBtn}
+            onClick={() => navigate("/buscar")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.96 }}
+          >
             Buscar partidos ⚽
-          </button>
+          </motion.button>
         </div>
 
         {loading && <p style={infoText}>Cargando tus partidos…</p>}
@@ -267,16 +359,25 @@ export default function MisPartidos() {
         )}
 
         {!loading && !errorMsg && partidos.length === 0 && (
-          <div style={emptyBox}>
+          <motion.div
+            style={emptyBox}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <p style={{ margin: 0 }}>
               Aún no estás en ningún partido. Cuando publiques uno en{" "}
               <strong>“Mis reservas → Me falta uno”</strong> o te inscribas en
               uno, aparecerá aquí.
             </p>
-            <button style={primaryBtn} onClick={() => navigate("/buscar")}>
+            <motion.button
+              style={primaryBtn}
+              onClick={() => navigate("/buscar")}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
               Buscar partidos ahora 💥
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {!loading && !errorMsg && partidos.length > 0 && (
@@ -298,7 +399,7 @@ export default function MisPartidos() {
                   </p>
                 ) : (
                   <div style={listCol}>
-                    {proximos.map((p) => {
+                    {proximos.map((p, index) => {
                       const dtNice = formatFechaLarga(p.fecha);
                       const esSeleccionado = seleccionado?.id === p.id;
                       const cuposUsados = p.confirmados || 0;
@@ -309,7 +410,7 @@ export default function MisPartidos() {
                           : 0;
 
                       return (
-                        <div
+                        <motion.div
                           key={p.id}
                           style={{
                             ...partidoCard,
@@ -324,6 +425,18 @@ export default function MisPartidos() {
                               : partidoCard.background,
                           }}
                           onClick={() => handleSeleccionar(p)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{
+                            y: -2,
+                            boxShadow: esSeleccionado
+                              ? "0 0 18px rgba(150,255,210,0.9)"
+                              : "0 0 14px rgba(150,255,210,0.6)",
+                          }}
                         >
                           <div style={partidoTop}>
                             <div>
@@ -359,7 +472,7 @@ export default function MisPartidos() {
                               </span>
                             )}
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
@@ -381,10 +494,24 @@ export default function MisPartidos() {
                   </p>
                 ) : (
                   <div style={listCol}>
-                    {pasados.map((p) => {
+                    {pasados.map((p, index) => {
                       const dtNice = formatFechaLarga(p.fecha);
                       return (
-                        <div key={p.id} style={partidoCardPast}>
+                        <motion.div
+                          key={p.id}
+                          style={partidoCardPast}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{
+                            y: -2,
+                            boxShadow:
+                              "0 0 14px rgba(255,105,180,0.7)",
+                          }}
+                        >
                           <div style={partidoTop}>
                             <div>
                               <div style={partidoNombre}>
@@ -399,13 +526,28 @@ export default function MisPartidos() {
                                 {p.hora_inicio} – {p.hora_fin}
                               </div>
                             </div>
-                            {p.soy_organizador ? (
-                              <span style={badgeOrganizador}>Organizaste</span>
-                            ) : (
-                              <span style={badgeJugador}>Jugaste</span>
-                            )}
+
+                            <div style={histRightCol}>
+                              {p.soy_organizador ? (
+                                <span style={badgeOrganizador}>
+                                  Organizaste
+                                </span>
+                              ) : (
+                                <span style={badgeJugador}>Jugaste</span>
+                              )}
+
+                              <motion.button
+                                type="button"
+                                style={borrarPastBtn}
+                                onClick={() => handleBorrarPartidoPasado(p)}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.96 }}
+                              >
+                                🗑 Borrar
+                              </motion.button>
+                            </div>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
@@ -415,284 +557,344 @@ export default function MisPartidos() {
 
             {/* Columna derecha: detalle + jugadores + chat + perfil jugador */}
             <div style={rightCol}>
-              {!seleccionado ? (
-                <div style={detalleEmptyBox}>
-                  <p style={{ margin: 0 }}>
-                    Selecciona un partido de la lista para ver los jugadores y
-                    el chat del equipo.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div style={detalleCard}>
-                    <div style={detalleHeader}>
-                      <h2 style={detalleTitle}>
-                        {seleccionado.cancha_nombre || "Cancha sin nombre"}
-                      </h2>
-                      <button
-                        style={detalleLinkBtn}
-                        onClick={() =>
-                          navigate(`/partido/${seleccionado.id}`)
-                        }
-                      >
-                        Ver detalle completo →
-                      </button>
+              <AnimatePresence mode="wait">
+                {!seleccionado ? (
+                  <motion.div
+                    key="empty"
+                    style={detalleEmptyBox}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <p style={{ margin: 0 }}>
+                      Selecciona un partido de la lista para ver los jugadores y
+                      el chat del equipo.
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={seleccionado.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                  >
+                    <div style={detalleCard}>
+                      <div style={detalleHeader}>
+                        <h2 style={detalleTitle}>
+                          {seleccionado.cancha_nombre || "Cancha sin nombre"}
+                        </h2>
+                        <motion.button
+                          style={detalleLinkBtn}
+                          onClick={() =>
+                            navigate(`/partido/${seleccionado.id}`)
+                          }
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.96 }}
+                        >
+                          Ver detalle completo →
+                        </motion.button>
+                      </div>
+                      <p style={detalleSub}>
+                        {formatFechaLarga(seleccionado.fecha)} ·{" "}
+                        {seleccionado.hora_inicio} – {seleccionado.hora_fin}
+                      </p>
+                      <p style={detalleSub}>
+                        📍{" "}
+                        {seleccionado.ubicacion || "Ubicación no especificada"}
+                      </p>
+                      <p style={detalleSub}>
+                        Organiza:{" "}
+                        <strong>
+                          {seleccionado.organizador_nombre || "Jugador"}
+                        </strong>
+                      </p>
+
+                      {!seleccionado.soy_organizador && (
+                        <motion.button
+                          style={salirBtn}
+                          type="button"
+                          onClick={handleSalirPartido}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.96 }}
+                        >
+                          <LogOut size={16} />
+                          Salir de este partido
+                        </motion.button>
+                      )}
                     </div>
-                    <p style={detalleSub}>
-                      {formatFechaLarga(seleccionado.fecha)} ·{" "}
-                      {seleccionado.hora_inicio} – {seleccionado.hora_fin}
-                    </p>
-                    <p style={detalleSub}>
-                      📍{" "}
-                      {seleccionado.ubicacion || "Ubicación no especificada"}
-                    </p>
-                    <p style={detalleSub}>
-                      Organiza:{" "}
-                      <strong>
-                        {seleccionado.organizador_nombre || "Jugador"}
-                      </strong>
-                    </p>
 
-                    {!seleccionado.soy_organizador && (
-                      <button
-                        style={salirBtn}
-                        type="button"
-                        onClick={handleSalirPartido}
-                      >
-                        <LogOut size={16} />
-                        Salir de este partido
-                      </button>
-                    )}
-                  </div>
+                    <div style={panelRow}>
+                      {/* Jugadores */}
+                      <div style={jugadoresCard}>
+                        <div style={panelHeader}>
+                          <span style={panelTitle}>Jugadores</span>
+                          <span style={panelChip}>
+                            <Users size={14} />
+                            {loadingPart
+                              ? " Cargando..."
+                              : ` ${participantes.length} jugador${
+                                  participantes.length === 1 ? "" : "es"
+                                }`}
+                          </span>
+                        </div>
 
-                  <div style={panelRow}>
-                    {/* Jugadores */}
-                    <div style={jugadoresCard}>
-                      <div style={panelHeader}>
-                        <span style={panelTitle}>Jugadores</span>
-                        <span style={panelChip}>
-                          <Users size={14} />
-                          {loadingPart
-                            ? " Cargando..."
-                            : ` ${participantes.length} jugador${
-                                participantes.length === 1 ? "" : "es"
-                              }`}
-                        </span>
+                        {participantes.length > 0 && !loadingPart && (
+                          <p style={{ ...panelText, marginBottom: 2 }}>
+                            Toca un jugador para ver su perfil.
+                          </p>
+                        )}
+
+                        <div style={jugadoresList}>
+                          {loadingPart ? (
+                            <p style={panelText}>Cargando jugadores…</p>
+                          ) : participantes.length === 0 ? (
+                            <p style={panelText}>
+                              Aún no hay jugadores confirmados (además del
+                              organizador).
+                            </p>
+                          ) : (
+                            participantes.map((pp, index) => (
+                              <motion.div
+                                key={pp.id}
+                                style={{
+                                  ...jugadorItem,
+                                  cursor: "pointer",
+                                  borderRadius: 10,
+                                  padding: "4px 6px",
+                                  background:
+                                    jugadorSeleccionadoId === pp.usuario_id
+                                      ? "rgba(255,105,180,0.18)"
+                                      : "transparent",
+                                }}
+                                onClick={() => handleVerPerfilJugador(pp)}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                  duration: 0.15,
+                                  delay: index * 0.02,
+                                }}
+                                whileHover={{
+                                  background: "rgba(255,105,180,0.25)",
+                                }}
+                              >
+                                <div style={jugadorAvatar}>
+                                  {pp.usuario_nombre?.[0]?.toUpperCase() ||
+                                    "J"}
+                                </div>
+                                <div>
+                                  <div style={jugadorNombre}>
+                                    {pp.usuario_nombre || "Jugador"}
+                                  </div>
+                                  <div style={jugadorMail}>
+                                    {pp.usuario_email || ""}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))
+                          )}
+                        </div>
                       </div>
 
-                      {participantes.length > 0 && !loadingPart && (
-                        <p style={{ ...panelText, marginBottom: 2 }}>
-                          Toca un jugador para ver su perfil.
-                        </p>
-                      )}
+                      {/* Chat */}
+                      <div style={chatCard}>
+                        <div style={panelHeader}>
+                          <span style={panelTitle}>
+                            <MessageCircle size={16} /> Chat del partido
+                          </span>
+                        </div>
 
-                      <div style={jugadoresList}>
-                        {loadingPart ? (
-                          <p style={panelText}>Cargando jugadores…</p>
-                        ) : participantes.length === 0 ? (
-                          <p style={panelText}>
-                            Aún no hay jugadores confirmados (además del
-                            organizador).
+                        <div style={chatBox}>
+                          {loadingChat ? (
+                            <p style={panelText}>Cargando chat…</p>
+                          ) : chatMensajes.length === 0 ? (
+                            <p style={panelText}>
+                              Aún no hay mensajes. Escribe el primero.
+                            </p>
+                          ) : (
+                            chatMensajes.map((m) => (
+                              <motion.div
+                                key={m.id}
+                                style={chatMsg}
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                              >
+                                <div style={chatMsgHeader}>
+                                  <span style={chatUser}>
+                                    {m.usuario_nombre || "Jugador"}
+                                  </span>
+                                  <span style={chatTime}>
+                                    {formatHora(m.creado_en)}
+                                  </span>
+                                </div>
+                                <div style={chatText}>{m.mensaje}</div>
+                              </motion.div>
+                            ))
+                          )}
+                        </div>
+
+                        <form style={chatForm} onSubmit={handleEnviarMensaje}>
+                          <input
+                            type="text"
+                            placeholder="Escribe un mensaje para tu equipo..."
+                            value={nuevoMensaje}
+                            onChange={(e) =>
+                              setNuevoMensaje(e.target.value)
+                            }
+                            style={chatInput}
+                          />
+                          <motion.button
+                            type="submit"
+                            style={chatBtn}
+                            disabled={enviandoMsg || !nuevoMensaje.trim()}
+                            whileHover={{
+                              scale:
+                                enviandoMsg || !nuevoMensaje.trim() ? 1 : 1.03,
+                            }}
+                            whileTap={{
+                              scale:
+                                enviandoMsg || !nuevoMensaje.trim() ? 1 : 0.96,
+                            }}
+                          >
+                            Enviar
+                          </motion.button>
+                        </form>
+                      </div>
+                    </div>
+
+                    {/* Tarjeta de perfil del jugador seleccionado */}
+                    {(loadingPerfil || jugadorPerfil || errorPerfil) && (
+                      <motion.div
+                        style={perfilCard}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <div style={perfilHeader}>
+                          <span style={perfilTitle}>
+                            <User size={16} /> Perfil del jugador
+                          </span>
+                          {jugadorPerfil && (
+                            <span style={perfilName}>
+                              {jugadorPerfil.nombre || "Jugador"}
+                            </span>
+                          )}
+                        </div>
+
+                        {loadingPerfil && (
+                          <p style={panelText}>Cargando perfil...</p>
+                        )}
+
+                        {errorPerfil && !loadingPerfil && (
+                          <p
+                            style={{
+                              ...panelText,
+                              color: "#ff9fbf",
+                            }}
+                          >
+                            {errorPerfil}
                           </p>
-                        ) : (
-                          participantes.map((pp) => (
-                            <div
-                              key={pp.id}
-                              style={{
-                                ...jugadorItem,
-                                cursor: "pointer",
-                                borderRadius: 10,
-                                padding: "4px 6px",
-                                background:
-                                  jugadorSeleccionadoId === pp.usuario_id
-                                    ? "rgba(255,105,180,0.18)"
-                                    : "transparent",
-                              }}
-                              onClick={() => handleVerPerfilJugador(pp)}
-                            >
-                              <div style={jugadorAvatar}>
-                                {pp.usuario_nombre?.[0]?.toUpperCase() || "J"}
+                        )}
+
+                        {!loadingPerfil && !errorPerfil && jugadorPerfil && (
+                          <>
+                            <div style={perfilMain}>
+                              <div style={perfilAvatar}>
+                                {jugadorPerfil.imagen ? (
+                                  <img
+                                    src={jugadorPerfil.imagen}
+                                    alt={
+                                      jugadorPerfil.nombre || "Jugador"
+                                    }
+                                    style={perfilAvatarImg}
+                                  />
+                                ) : (
+                                  <span style={perfilAvatarLetter}>
+                                    {(jugadorPerfil.nombre || "J")
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </span>
+                                )}
                               </div>
                               <div>
-                                <div style={jugadorNombre}>
-                                  {pp.usuario_nombre || "Jugador"}
+                                <div style={perfilLine}>
+                                  <strong>Edad:</strong>{" "}
+                                  <span>
+                                    {jugadorPerfil.edad || "No indicada"}
+                                  </span>
                                 </div>
-                                <div style={jugadorMail}>
-                                  {pp.usuario_email || ""}
+                                <div style={perfilLine}>
+                                  <strong>Posiciones:</strong>{" "}
+                                  <span>
+                                    {(() => {
+                                      const pos =
+                                        jugadorPerfil.posiciones || {};
+                                      const activas = Object.entries(pos)
+                                        .filter(([, v]) => !!v)
+                                        .map(([k]) => k);
+                                      return activas.length
+                                        ? activas.join(", ")
+                                        : "No especificadas";
+                                    })()}
+                                  </span>
                                 </div>
                               </div>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Chat */}
-                    <div style={chatCard}>
-                      <div style={panelHeader}>
-                        <span style={panelTitle}>
-                          <MessageCircle size={16} /> Chat del partido
-                        </span>
-                      </div>
+                            {jugadorPerfil.bio && (
+                              <p style={perfilBio}>{jugadorPerfil.bio}</p>
+                            )}
 
-                      <div style={chatBox}>
-                        {loadingChat ? (
-                          <p style={panelText}>Cargando chat…</p>
-                        ) : chatMensajes.length === 0 ? (
-                          <p style={panelText}>
-                            Aún no hay mensajes. Escribe el primero.
-                          </p>
-                        ) : (
-                          chatMensajes.map((m) => (
-                            <div key={m.id} style={chatMsg}>
-                              <div style={chatMsgHeader}>
-                                <span style={chatUser}>
-                                  {m.usuario_nombre || "Jugador"}
-                                </span>
-                                <span style={chatTime}>
-                                  {formatHora(m.creado_en)}
-                                </span>
-                              </div>
-                              <div style={chatText}>{m.mensaje}</div>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                            {/* DISPONIBILIDAD FORMATEADA DESDE LA BD */}
+                            {jugadorPerfil.disponibilidad &&
+                              (() => {
+                                const textoDisp =
+                                  formatearDisponibilidad(
+                                    jugadorPerfil.disponibilidad
+                                  );
+                                if (!textoDisp) return null;
+                                return (
+                                  <p style={perfilDisp}>
+                                    <strong>Disponibilidad:</strong>{" "}
+                                    {textoDisp}
+                                  </p>
+                                );
+                              })()}
 
-                      <form style={chatForm} onSubmit={handleEnviarMensaje}>
-                        <input
-                          type="text"
-                          placeholder="Escribe un mensaje para tu equipo..."
-                          value={nuevoMensaje}
-                          onChange={(e) => setNuevoMensaje(e.target.value)}
-                          style={chatInput}
-                        />
-                        <button
-                          type="submit"
-                          style={chatBtn}
-                          disabled={enviandoMsg || !nuevoMensaje.trim()}
-                        >
-                          Enviar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-
-                  {/* Tarjeta de perfil del jugador seleccionado */}
-                  {(loadingPerfil || jugadorPerfil || errorPerfil) && (
-                    <div style={perfilCard}>
-                      <div style={perfilHeader}>
-                        <span style={perfilTitle}>
-                          <User size={16} /> Perfil del jugador
-                        </span>
-                        {jugadorPerfil && (
-                          <span style={perfilName}>
-                            {jugadorPerfil.nombre || "Jugador"}
-                          </span>
-                        )}
-                      </div>
-
-                      {loadingPerfil && (
-                        <p style={panelText}>Cargando perfil...</p>
-                      )}
-
-                      {errorPerfil && !loadingPerfil && (
-                        <p
-                          style={{
-                            ...panelText,
-                            color: "#ff9fbf",
-                          }}
-                        >
-                          {errorPerfil}
-                        </p>
-                      )}
-
-                      {!loadingPerfil && !errorPerfil && jugadorPerfil && (
-                        <>
-                          <div style={perfilMain}>
-                            <div style={perfilAvatar}>
-                              {jugadorPerfil.imagen ? (
-                                <img
-                                  src={jugadorPerfil.imagen}
-                                  alt={jugadorPerfil.nombre || "Jugador"}
-                                  style={perfilAvatarImg}
-                                />
-                              ) : (
-                                <span style={perfilAvatarLetter}>
-                                  {(jugadorPerfil.nombre || "J")
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
+                            {Array.isArray(jugadorPerfil.videos) &&
+                              jugadorPerfil.videos.filter(Boolean).length >
+                                0 && (
+                                <p style={perfilVideos}>
+                                  <strong>Clips:</strong>{" "}
+                                  {
+                                    jugadorPerfil.videos.filter(
+                                      (v) => !!v
+                                    ).length
+                                  }{" "}
+                                  video
+                                  {jugadorPerfil.videos.filter(Boolean)
+                                    .length > 1
+                                    ? "s"
+                                    : ""}{" "}
+                                  guardado
+                                  {jugadorPerfil.videos.filter(Boolean)
+                                    .length > 1
+                                    ? "s"
+                                    : ""}
+                                </p>
                               )}
-                            </div>
-                            <div>
-                              <div style={perfilLine}>
-                                <strong>Edad:</strong>{" "}
-                                <span>
-                                  {jugadorPerfil.edad || "No indicada"}
-                                </span>
-                              </div>
-                              <div style={perfilLine}>
-                                <strong>Posiciones:</strong>{" "}
-                                <span>
-                                  {(() => {
-                                    const pos =
-                                      jugadorPerfil.posiciones || {};
-                                    const activas = Object.entries(pos)
-                                      .filter(([, v]) => !!v)
-                                      .map(([k]) => k);
-                                    return activas.length
-                                      ? activas.join(", ")
-                                      : "No especificadas";
-                                  })()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {jugadorPerfil.bio && (
-                            <p style={perfilBio}>{jugadorPerfil.bio}</p>
-                          )}
-
-                          {jugadorPerfil.disponibilidad &&
-                            Object.keys(
-                              jugadorPerfil.disponibilidad || {}
-                            ).length > 0 && (
-                              <p style={perfilDisp}>
-                                <strong>Disponibilidad:</strong>{" "}
-                                {Object.keys(
-                                  jugadorPerfil.disponibilidad
-                                ).join(" · ")}
-                              </p>
-                            )}
-
-                          {Array.isArray(jugadorPerfil.videos) &&
-                            jugadorPerfil.videos.filter(Boolean).length > 0 && (
-                              <p style={perfilVideos}>
-                                <strong>Clips:</strong>{" "}
-                                {jugadorPerfil.videos.filter(Boolean).length}{" "}
-                                video
-                                {jugadorPerfil.videos.filter(Boolean).length >
-                                1
-                                  ? "s"
-                                  : ""}{" "}
-                                guardado
-                                {jugadorPerfil.videos.filter(Boolean).length >
-                                1
-                                  ? "s"
-                                  : ""}
-                              </p>
-                            )}
-                        </>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -1270,4 +1472,23 @@ const perfilVideos = {
   margin: "2px 0",
   fontSize: "0.8rem",
   color: "#b4ffe3",
+};
+
+// Columna derecha del historial (badge + botón borrar)
+const histRightCol = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-end",
+  gap: 6,
+};
+
+// Botón borrar partido pasado
+const borrarPastBtn = {
+  padding: "2px 10px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,120,150,.9)",
+  background: "rgba(50,0,20,.95)",
+  color: "#ffd5ec",
+  fontSize: "0.75rem",
+  cursor: "pointer",
 };

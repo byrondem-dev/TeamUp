@@ -32,6 +32,25 @@ function formatFechaLarga(fechaRaw) {
   }
 }
 
+// ==== inyectar keyframes de animación una sola vez ====
+let animationsInjected = false;
+function injectAnimations() {
+  if (animationsInjected || typeof document === "undefined") return;
+  const style = document.createElement("style");
+  style.innerHTML = `
+@keyframes fadeUpSoft {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInSoft {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+`;
+  document.head.appendChild(style);
+  animationsInjected = true;
+}
+
 export default function PartidoDetalle() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,6 +63,12 @@ export default function PartidoDetalle() {
   const [loading, setLoading] = useState(!partidoInicial);
   const [errorMsg, setErrorMsg] = useState("");
   const [inscrito, setInscrito] = useState(false);
+
+  // 👇 siempre partir arriba + inyectar animaciones
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    injectAnimations();
+  }, []);
 
   // 👉 Si NO viene partido por state, lo pedimos al backend
   useEffect(() => {
@@ -76,9 +101,16 @@ export default function PartidoDetalle() {
     return (
       <div style={pageBg}>
         <div style={simpleOverlay} />
-        <div style={fallbackCard}>
+        <div
+          style={{
+            ...fallbackCard,
+            animation: "fadeUpSoft 0.45s ease-out",
+          }}
+        >
           <h1 style={titleText}>Cargando partido…</h1>
-          <p style={fallbackText}>Espera un momento mientras traemos los datos.</p>
+          <p style={fallbackText}>
+            Espera un momento mientras traemos los datos.
+          </p>
         </div>
       </div>
     );
@@ -89,13 +121,30 @@ export default function PartidoDetalle() {
     return (
       <div style={pageBg}>
         <div style={simpleOverlay} />
-        <div style={fallbackCard}>
+        <div
+          style={{
+            ...fallbackCard,
+            animation: "fadeUpSoft 0.45s ease-out",
+          }}
+        >
           <h1 style={titleText}>Partido no encontrado</h1>
           <p style={fallbackText}>
             {errorMsg ||
               "No encontramos los datos del partido. Vuelve a buscar uno y selecciona su detalle."}
           </p>
-          <button style={primaryBtn} onClick={() => navigate("/buscar")}>
+          <button
+            style={primaryBtn}
+            onClick={() => navigate("/buscar")}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px) scale(1.02)";
+              e.currentTarget.style.boxShadow =
+                "0 0 16px rgba(255,105,180,.85)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Volver a buscar partidos 🔎
           </button>
         </div>
@@ -147,15 +196,43 @@ export default function PartidoDetalle() {
       <div style={overlay} />
 
       {/* Home fijo arriba */}
-      <button style={homeBtn} onClick={() => navigate("/")}>
+      <button
+        style={homeBtn}
+        onClick={() => navigate("/")}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-1px) scale(1.03)";
+          e.currentTarget.style.boxShadow = "0 0 14px rgba(255,105,180,.9)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0) scale(1)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
         <Home size={20} />
         <span>Inicio</span>
       </button>
 
-      <div style={shellCard}>
+      <div
+        style={{
+          ...shellCard,
+          animation: "fadeUpSoft 0.45s ease-out",
+        }}
+      >
         {/* Barra superior */}
         <div style={headerRow}>
-          <button style={backBtn} onClick={() => navigate(-1)}>
+          <button
+            style={backBtn}
+            onClick={() => navigate(-1)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px) scale(1.03)";
+              e.currentTarget.style.boxShadow =
+                "0 0 14px rgba(255,105,180,.9)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             <ChevronLeft size={18} />
             <span>Volver</span>
           </button>
@@ -173,7 +250,19 @@ export default function PartidoDetalle() {
         <div style={contentGrid}>
           {/* Izquierda: imagen + info cancha */}
           <div style={leftCol}>
-            <div style={photoCard}>
+            <div
+              style={photoCard}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px) scale(1.02)";
+                e.currentTarget.style.boxShadow =
+                  "0 24px 55px rgba(0,0,0,.95)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0) scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 18px 40px rgba(0,0,0,.9)";
+              }}
+            >
               <img
                 src={
                   partido.foto ||
@@ -258,7 +347,19 @@ export default function PartidoDetalle() {
             </div>
 
             {/* Descripción */}
-            <div style={descriptionCard}>
+            <div
+              style={descriptionCard}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 16px 40px rgba(0,0,0,.85)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 24px rgba(0,0,0,.6)";
+              }}
+            >
               <div style={descriptionHeader}>
                 <Info size={16} />
                 <span>Descripción del partido</span>
@@ -272,7 +373,19 @@ export default function PartidoDetalle() {
 
           {/* Derecha: tarjeta de inscripción */}
           <div style={rightCol}>
-            <div style={ctaCard}>
+            <div
+              style={ctaCard}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 18px 50px rgba(0,0,0,.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 10px 30px rgba(0,0,0,.75)";
+              }}
+            >
               <div style={ctaHeader}>
                 <h2 style={ctaTitle}>Inscribirme a este partido</h2>
                 <span style={ctaChip}>Confirmación</span>
@@ -341,6 +454,17 @@ export default function PartidoDetalle() {
                   }}
                   disabled={disponibles <= 0 || inscrito}
                   onClick={handleInscribirme}
+                  onMouseEnter={(e) => {
+                    if (disponibles <= 0 || inscrito) return;
+                    e.currentTarget.style.transform =
+                      "translateY(-1px) scale(1.02)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 16px rgba(255,105,180,.9)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0) scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 >
                   {disponibles <= 0
                     ? "Partido completo"
@@ -351,8 +475,8 @@ export default function PartidoDetalle() {
               </div>
 
               <p style={ctaFootnote}>
-                Este botón ya llama a la API (<code>unirsePartido</code>). Si
-                el backend acepta tu inscripción, el contador se actualiza.
+                Este botón ya llama a la API (<code>unirsePartido</code>). Si el
+                backend acepta tu inscripción, el contador se actualiza.
               </p>
 
               {inscrito && (
@@ -387,7 +511,6 @@ export default function PartidoDetalle() {
 
 /* === estilos === */
 
-// (todos los estilos que ya tenías, iguales)
 const pageBg = {
   minHeight: "100vh",
   padding: "80px 16px 32px",
@@ -465,6 +588,7 @@ const backBtn = {
   cursor: "pointer",
   fontSize: "0.8rem",
   fontWeight: 600,
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
 const homeBtn = {
@@ -483,6 +607,7 @@ const homeBtn = {
   cursor: "pointer",
   fontSize: "0.8rem",
   fontWeight: 600,
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
 const contentGrid = {
@@ -510,6 +635,7 @@ const photoCard = {
   overflow: "hidden",
   height: 220,
   boxShadow: "0 18px 40px rgba(0,0,0,.9)",
+  transition: "transform .2s ease, box-shadow .2s ease",
 };
 
 const photoGradient = {
@@ -601,6 +727,8 @@ const descriptionCard = {
   border: "1px solid rgba(150,255,210,.55)",
   color: "#e4fdf4",
   fontSize: "0.88rem",
+  boxShadow: "0 8px 24px rgba(0,0,0,.6)",
+  transition: "transform .18s ease, box-shadow .18s ease",
 };
 
 const descriptionHeader = {
@@ -627,6 +755,8 @@ const ctaCard = {
     "linear-gradient(145deg, rgba(18,0,26,.98), rgba(0,0,0,.98))",
   border: "1px solid rgba(255,105,180,.4)",
   color: "#ffe6f3",
+  boxShadow: "0 10px 30px rgba(0,0,0,.75)",
+  transition: "transform .18s ease, box-shadow .18s ease",
 };
 
 const ctaHeader = {
@@ -723,6 +853,7 @@ const primaryBtn = {
   fontSize: "0.95rem",
   cursor: "pointer",
   letterSpacing: "0.05em",
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
 const ctaFootnote = {

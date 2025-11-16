@@ -5,8 +5,16 @@ import { MapPin, Phone, DollarSign, CalendarDays, Home } from "lucide-react";
 import { apiGet, apiPost } from "../api";
 import { useNavigate } from "react-router-dom";
 
+// Formateador CLP para mostrar precios igual que en ReservarCancha
+const CLP = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
+
 function HoraSelect({ valor, onChange, abierto, onToggle, opciones }) {
   const boxRef = useRef(null);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (boxRef.current && !boxRef.current.contains(event.target)) {
@@ -44,8 +52,8 @@ function HoraSelect({ valor, onChange, abierto, onToggle, opciones }) {
             maxHeight: 160,
             overflowY: "auto",
             backgroundColor: "#000",
-            border: "1px solid #ff1493",
-            borderRadius: 6,
+            border: "1px solid #ff69b4",
+            borderRadius: 8,
             zIndex: 999,
           }}
         >
@@ -56,13 +64,18 @@ function HoraSelect({ valor, onChange, abierto, onToggle, opciones }) {
                 onChange(h);
                 onToggle();
               }}
-              whileHover={{ backgroundColor: "#ff1493", color: "#000" }}
+              whileHover={{ backgroundColor: "#ff69b4", color: "#000" }}
               animate={{
-                backgroundColor: valor === h ? "#ff1493" : "#000",
+                backgroundColor: valor === h ? "#ff69b4" : "#000",
                 color: valor === h ? "#000" : "#fff",
               }}
               transition={{ duration: 0.15 }}
-              style={{ padding: 8, cursor: "pointer", fontSize: 13 }}
+              style={{
+                padding: 8,
+                cursor: "pointer",
+                fontSize: 13,
+                textAlign: "center",
+              }}
             >
               {h}
             </motion.div>
@@ -164,7 +177,7 @@ export default function PublicarCancha() {
           tipo: "futbol7",
           precio_base: precioNum,
           foto: null,
-          disponibilidad: cancha.disponibilidad, // <-- se guarda en BD
+          disponibilidad: cancha.disponibilidad,
         },
         true
       );
@@ -194,10 +207,10 @@ export default function PublicarCancha() {
 
   return (
     <div style={pageWrapper}>
-      {/* overlay degradado como en BuscarPartido / ReservarCancha */}
+      {/* overlay degradado como en ReservarCancha */}
       <div style={bgOverlay} />
 
-      {/* Botón Inicio por encima del overlay */}
+      {/* Botón Inicio flotante */}
       <button
         type="button"
         onClick={() => navigate("/")}
@@ -211,365 +224,280 @@ export default function PublicarCancha() {
 
       <main style={mainWrapper}>
         <div style={layout}>
-          {/* FORMULARIO PUBLICAR */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            style={{
-              background: "#1a1a1a",
-              padding: 24,
-              borderRadius: 14,
-              boxShadow: "0 0 15px rgba(255, 20, 147, 0.25)",
-              minHeight: 600,
-            }}
-          >
-            <h2
-              style={{
-                color: "#ff1493",
-                textAlign: "center",
-                marginBottom: 20,
-              }}
-            >
-              Publicar cancha
-            </h2>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input
-                type="text"
-                placeholder="Nombre de la cancha"
-                name="nombre"
-                value={cancha.nombre}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-              <input
-                type="text"
-                placeholder="Dirección"
-                name="direccion"
-                value={cancha.direccion}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-              <input
-                type="text"
-                placeholder="Teléfono"
-                name="telefono"
-                value={cancha.telefono}
-                onChange={handleChange}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Precio por hora"
-                name="precio"
-                value={cancha.precio}
-                onChange={handleChange}
-                style={inputStyle}
-              />
+          {/* HERO SUPERIOR TIPO MODO DUEÑO */}
+          <header style={pageHeader}>
+            <div style={heroBadgeRow}>
+              <span style={heroDot} />
+              <span style={heroBadgeText}>Modo dueño</span>
             </div>
 
-            <h3 style={{ color: "#ff66b2", marginTop: 20 }}>Disponibilidad</h3>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                margin: "10px 0 20px",
-              }}
-            >
-              {dias.map((d) => (
-                <button
-                  key={d.key}
-                  onClick={() => toggleDia(d.key)}
-                  style={{
-                    backgroundColor: cancha.disponibilidad[d.key].habilitado
-                      ? "#ff1493"
-                      : "#333",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: 42,
-                    height: 42,
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    transition: "0.2s",
-                    fontSize: 15,
-                  }}
-                >
-                  {d.label}
-                </button>
-              ))}
+            <h1 style={heroTitle}>
+              Publica tu cancha,
+              <br />
+              llena tu calendario de partidos
+            </h1>
+
+            <p style={heroSubtitle}>
+              Sube tu cancha, define tus horarios y deja que los equipos la
+              reserven desde cualquier parte. Todo con el mismo estilo rosa
+              futbolero de TeamUp.
+            </p>
+
+            <div style={heroPillsRow}>
+              <span style={heroPill}>Administra horarios por día</span>
+              <span style={heroPill}>Precio por hora en CLP</span>
+              <span style={heroPill}>Panel de tus canchas</span>
             </div>
+          </header>
 
-            {Object.entries(cancha.disponibilidad).map(([dia, data]) =>
-              data.habilitado ? (
-                <motion.div
-                  key={dia}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "#111",
-                    padding: "8px 12px",
-                    borderRadius: 6,
-                    marginBottom: 8,
-                    fontSize: 13,
-                  }}
-                >
-                  <span style={{ color: "#ff66b2", width: 40 }}>{dia}</span>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    <HoraSelect
-                      valor={data.inicio}
-                      onChange={(val) =>
-                        handleDisponibilidadChange(dia, "inicio", val)
-                      }
-                      abierto={selectAbierto === `${dia}-inicio`}
-                      onToggle={() =>
-                        setSelectAbierto(
-                          selectAbierto === `${dia}-inicio`
-                            ? null
-                            : `${dia}-inicio`
-                        )
-                      }
-                      opciones={horas}
-                    />
-                    <span style={{ color: "#888" }}>a</span>
-                    <HoraSelect
-                      valor={data.fin}
-                      onChange={(val) =>
-                        handleDisponibilidadChange(dia, "fin", val)
-                      }
-                      abierto={selectAbierto === `${dia}-fin`}
-                      onToggle={() =>
-                        setSelectAbierto(
-                          selectAbierto === `${dia}-fin`
-                            ? null
-                            : `${dia}-fin`
-                        )
-                      }
-                      opciones={horas}
-                    />
-                  </div>
-                </motion.div>
-              ) : null
-            )}
-
-            <button onClick={handlePublicar} style={botonPublicar}>
-              Publicar cancha
-            </button>
-          </motion.div>
-
-          {/* LISTA DE MIS CANCHAS */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            style={{
-              background: "#1a1a1a",
-              padding: 24,
-              borderRadius: 14,
-              boxShadow: "0 0 18px rgba(255, 20, 147, 0.15)",
-              minHeight: 350,
-              maxHeight: "85vh",
-              overflowY: "auto",
-            }}
-          >
-            <h2
-              style={{
-                color: "#ff1493",
-                textAlign: "center",
-                marginBottom: 20,
-              }}
+          {/* DOS COLUMNAS: FORM + MIS CANCHAS */}
+          <div style={columnsRow}>
+            {/* FORMULARIO PUBLICAR */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              style={formCard}
             >
-              Mis canchas
-            </h2>
-
-            {canchas.length === 0 ? (
-              <p style={{ textAlign: "center", color: "#bbb" }}>
-                Aún no has publicado canchas.
+              <h2 style={formTitle}>Publicar nueva cancha</h2>
+              <p style={formSubtitle}>
+                Completa los datos básicos, marca los días y horarios
+                disponibles y publica tu cancha para que los equipos la puedan
+                reservar.
               </p>
-            ) : (
+
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(260px, 1fr))",
-                  gap: 15,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  marginTop: 8,
                 }}
               >
-                {canchas.map((c, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.03 }}
-                    transition={{ duration: 0.2 }}
-                    onClick={() =>
-                      navigate(`/mis-canchas/${c.id}`, { state: { cancha: c } })
-                    }
+                <input
+                  type="text"
+                  placeholder="Nombre de la cancha"
+                  name="nombre"
+                  value={cancha.nombre}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
+                <input
+                  type="text"
+                  placeholder="Dirección / sector"
+                  name="direccion"
+                  value={cancha.direccion}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
+                <input
+                  type="text"
+                  placeholder="Teléfono de contacto (opcional)"
+                  name="telefono"
+                  value={cancha.telefono}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
+                <input
+                  type="number"
+                  placeholder="Precio por hora (CLP)"
+                  name="precio"
+                  value={cancha.precio}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
+              </div>
+
+              <h3 style={disponibilidadTitle}>Disponibilidad semanal</h3>
+              <p style={disponibilidadSubtitle}>
+                Activa los días y elige rango de inicio y término para cada uno.
+              </p>
+
+              <div style={diasRow}>
+                {dias.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => toggleDia(d.key)}
                     style={{
-                      backgroundColor: "#111",
-                      padding: 18,
-                      borderRadius: 10,
-                      boxShadow: "0 0 12px rgba(255, 20, 147, 0.15)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      cursor: "pointer",
+                      ...diaChip,
+                      backgroundColor: cancha.disponibilidad[d.key].habilitado
+                        ? "#ff69b4"
+                        : "rgba(0,0,0,0.9)",
+                      color: cancha.disponibilidad[d.key].habilitado
+                        ? "#000"
+                        : "#ffe6f3",
+                      boxShadow: cancha.disponibilidad[d.key].habilitado
+                        ? "0 0 15px rgba(255,105,180,0.8)"
+                        : "none",
                     }}
                   >
-                    <h3
-                      style={{
-                        color: "#fff",
-                        fontSize: 18,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {c.nombre}
-                    </h3>
-
-                    <p
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        color: "#fff",
-                      }}
-                    >
-                      <MapPin size={16} color="#ff1493" />{" "}
-                      {c.ubicacion || "-"}
-                    </p>
-
-                    {c.telefono ? (
-                      <p
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          color: "#fff",
-                        }}
-                      >
-                        <Phone size={16} color="#ff1493" /> {c.telefono}
-                      </p>
-                    ) : null}
-
-                    <p
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        color: "#fff",
-                      }}
-                    >
-                      <DollarSign size={16} color="#ff1493" />{" "}
-                      {typeof c.precio_base === "number"
-                        ? `$${c.precio_base}`
-                        : "-"}{" "}
-                      / hora
-                    </p>
-
-                    <div style={{ marginTop: 6 }}>
-                      <p
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          color: "#fff",
-                          fontSize: 13,
-                          marginBottom: 4,
-                        }}
-                      >
-                        <CalendarDays size={16} color="#ff1493" /> Horario
-                        disponible
-                      </p>
-
-                      {c.disponibilidad &&
-                      Object.values(c.disponibilidad).some(
-                        (d) => d?.habilitado
-                      ) ? (
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 6,
-                            fontSize: 12,
-                          }}
-                        >
-                          {Object.entries(c.disponibilidad)
-                            .filter(([_, d]) => d?.habilitado)
-                            .map(([dia, d]) => (
-                              <div
-                                key={dia}
-                                style={{
-                                  backgroundColor: "#222",
-                                  color: "#fff",
-                                  padding: "4px 8px",
-                                  borderRadius: 6,
-                                }}
-                              >
-                                <strong style={{ color: "#ff66b2" }}>
-                                  {dia}:
-                                </strong>{" "}
-                                {d.inicio} - {d.fin}
-                              </div>
-                            ))}
-                        </div>
-                      ) : (
-                        <p style={{ color: "#bbb", fontSize: 12 }}>
-                          Sin horario cargado
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
+                    {d.label}
+                  </button>
                 ))}
               </div>
-            )}
-          </motion.div>
+
+              <div style={{ marginTop: 10 }}>
+                {Object.entries(cancha.disponibilidad).map(([dia, data]) =>
+                  data.habilitado ? (
+                    <motion.div
+                      key={dia}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.25 }}
+                      style={filaDia}
+                    >
+                      <span style={filaDiaLabel}>{dia}</span>
+                      <div style={filaDiaHoras}>
+                        <HoraSelect
+                          valor={data.inicio}
+                          onChange={(val) =>
+                            handleDisponibilidadChange(dia, "inicio", val)
+                          }
+                          abierto={selectAbierto === `${dia}-inicio`}
+                          onToggle={() =>
+                            setSelectAbierto(
+                              selectAbierto === `${dia}-inicio`
+                                ? null
+                                : `${dia}-inicio`
+                            )
+                          }
+                          opciones={horas}
+                        />
+                        <span style={{ color: "#888", fontSize: 13 }}>a</span>
+                        <HoraSelect
+                          valor={data.fin}
+                          onChange={(val) =>
+                            handleDisponibilidadChange(dia, "fin", val)
+                          }
+                          abierto={selectAbierto === `${dia}-fin`}
+                          onToggle={() =>
+                            setSelectAbierto(
+                              selectAbierto === `${dia}-fin`
+                                ? null
+                                : `${dia}-fin`
+                            )
+                          }
+                          opciones={horas}
+                        />
+                      </div>
+                    </motion.div>
+                  ) : null
+                )}
+              </div>
+
+              <button type="button" onClick={handlePublicar} style={botonPublicar}>
+                Publicar cancha
+              </button>
+            </motion.div>
+
+            {/* LISTA DE MIS CANCHAS */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              style={misCanchasPanel}
+            >
+              <div style={misCanchasHeaderRow}>
+                <div>
+                  <h2 style={misCanchasTitle}>Mis canchas publicadas</h2>
+                  <p style={misCanchasSubtitle}>
+                    {canchas.length === 0
+                      ? "Aún no has publicado ninguna cancha."
+                      : `Tienes ${canchas.length} cancha${
+                          canchas.length === 1 ? "" : "s"
+                        } activas.`}
+                  </p>
+                </div>
+              </div>
+
+              {canchas.length === 0 ? (
+                <p style={{ textAlign: "center", color: "#bbb", marginTop: 20 }}>
+                  Publica tu primera cancha y comenzará a aparecer acá ⚽
+                </p>
+              ) : (
+                <div style={misCanchasGrid}>
+                  {canchas.map((c, i) => (
+                    <motion.article
+                      key={i}
+                      whileHover={{ scale: 1.03, translateY: -2 }}
+                      transition={{ duration: 0.2 }}
+                      onClick={() =>
+                        navigate(`/mis-canchas/${c.id}`, { state: { cancha: c } })
+                      }
+                      style={misCanchaCard}
+                    >
+                      <div style={misCanchaHeader}>
+                        <h3 style={misCanchaName}>{c.nombre}</h3>
+                        <span style={misCanchaId}>ID {c.id}</span>
+                      </div>
+
+                      <p style={misCanchaLine}>
+                        <MapPin size={16} color="#ff69b4" />{" "}
+                        {c.ubicacion || "-"}
+                      </p>
+
+                      {c.telefono ? (
+                        <p style={misCanchaLine}>
+                          <Phone size={16} color="#ff69b4" /> {c.telefono}
+                        </p>
+                      ) : null}
+
+                      <p style={misCanchaLine}>
+                        <DollarSign size={16} color="#ff69b4" />{" "}
+                        {typeof c.precio_base === "number"
+                          ? `${CLP.format(c.precio_base)} / hora`
+                          : "-"}
+                      </p>
+
+                      <div style={{ marginTop: 8 }}>
+                        <p style={misCanchaHorarioLabel}>
+                          <CalendarDays size={16} color="#ff69b4" /> Horario
+                          disponible
+                        </p>
+
+                        {c.disponibilidad &&
+                        Object.values(c.disponibilidad).some(
+                          (d) => d && d.habilitado
+                        ) ? (
+                          <div style={misCanchaHorarioGrid}>
+                            {Object.entries(c.disponibilidad)
+                              .filter(([, d]) => d && d.habilitado)
+                              .map(([dia, d]) => (
+                                <div key={dia} style={misCanchaHorarioChip}>
+                                  <strong
+                                    style={{
+                                      color: "#ffb3e1",
+                                      marginRight: 2,
+                                    }}
+                                  >
+                                    {dia}:
+                                  </strong>
+                                  {d.inicio} – {d.fin}
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          <p style={misCanchaSinHorario}>
+                            Sin horario cargado
+                          </p>
+                        )}
+                      </div>
+                    </motion.article>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
         </div>
       </main>
     </div>
   );
 }
 
-const inputStyle = {
-  padding: 10,
-  borderRadius: 6,
-  border: "none",
-  backgroundColor: "#111",
-  color: "#fff",
-  outline: "none",
-};
+/* ===== Estilos ===== */
 
-const selectWheel = {
-  backgroundColor: "#000",
-  color: "#fff",
-  border: "1px solid #ff1493",
-  borderRadius: 6,
-  padding: "5px 6px",
-  fontSize: 13,
-  width: 80,
-  cursor: "pointer",
-  textAlign: "center",
-};
-
-const botonPublicar = {
-  marginTop: 20,
-  width: "100%",
-  padding: 12,
-  backgroundColor: "#ff1493",
-  border: "none",
-  borderRadius: 6,
-  color: "#fff",
-  fontWeight: "bold",
-  cursor: "pointer",
-  fontSize: 16,
-  transition: "0.25s",
-};
-
-/* FONDO + OVERLAY (igual estilo que ReservarCancha / BuscarPartido) */
+/* Fondo + overlay, mismo estilo que ReservarCancha */
 const pageWrapper = {
   position: "relative",
   minHeight: "100vh",
@@ -601,14 +529,13 @@ const layout = {
   width: "100%",
   maxWidth: 1200,
   margin: "0 auto",
-  padding: "40px 20px",
-  display: "grid",
-  gridTemplateColumns: "minmax(320px, 480px) 1fr",
+  padding: "40px 20px 32px",
+  display: "flex",
+  flexDirection: "column",
   gap: 24,
-  alignItems: "start",
 };
 
-/* Botón Inicio igual al de MisPartidos / ReservarCancha */
+/* Botón Inicio igual al de ReservarCancha */
 const homeBtn = {
   position: "absolute",
   top: 18,
@@ -626,4 +553,316 @@ const homeBtn = {
   background:
     "radial-gradient(circle at top left, rgba(255,105,180,.25), rgba(0,0,0,.9))",
   fontSize: "0.85rem",
+};
+
+const pageHeader = {
+  color: "#ffe6f3",
+  maxWidth: 720,
+};
+
+const heroBadgeRow = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "6px 14px",
+  borderRadius: 999,
+  background: "rgba(0,0,0,0.85)",
+  border: "1px solid rgba(255,105,180,0.7)",
+  fontSize: "0.75rem",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  marginBottom: 14,
+};
+
+const heroDot = {
+  width: 8,
+  height: 8,
+  borderRadius: "50%",
+  background: "#32ffb5",
+  boxShadow: "0 0 10px rgba(50,255,181,0.9)",
+};
+
+const heroBadgeText = {
+  color: "#ffd1e8",
+};
+
+const heroTitle = {
+  margin: 0,
+  fontSize: "2.5rem",
+  lineHeight: 1.1,
+  fontWeight: 900,
+  backgroundImage:
+    "linear-gradient(120deg,#ffffff,#ffb3e1,#ff69b4,#ffd1e8)",
+  WebkitBackgroundClip: "text",
+  color: "transparent",
+};
+
+const heroSubtitle = {
+  marginTop: 12,
+  marginBottom: 12,
+  fontSize: "0.95rem",
+  maxWidth: 560,
+  color: "#ffe6f3",
+  opacity: 0.92,
+};
+
+const heroPillsRow = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 4,
+};
+
+const heroPill = {
+  padding: "6px 12px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,105,180,0.7)",
+  background: "rgba(0,0,0,0.9)",
+  fontSize: "0.8rem",
+  color: "#ffd1e8",
+  fontWeight: 600,
+};
+
+const columnsRow = {
+  display: "grid",
+  gridTemplateColumns: "minmax(320px, 460px) 1fr",
+  gap: 24,
+  alignItems: "start",
+};
+
+/* Tarjeta formulario */
+const formCard = {
+  background: "#000000",
+  padding: 24,
+  borderRadius: 22,
+  border: "2px solid #ff69b4",
+  boxShadow: "0 0 25px rgba(255,105,180,0.4)",
+  minHeight: 560,
+};
+
+const formTitle = {
+  color: "#ff79c4",
+  fontSize: "1.4rem",
+  fontWeight: 800,
+  margin: 0,
+};
+
+const formSubtitle = {
+  color: "#ffe6f3",
+  fontSize: "0.85rem",
+  marginTop: 6,
+  marginBottom: 12,
+  opacity: 0.9,
+};
+
+const disponibilidadTitle = {
+  color: "#ff66b2",
+  marginTop: 18,
+  marginBottom: 2,
+  fontSize: "0.95rem",
+};
+
+const disponibilidadSubtitle = {
+  color: "#ffe6f3",
+  fontSize: "0.8rem",
+  opacity: 0.8,
+  marginBottom: 8,
+};
+
+const diasRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  margin: "10px 0 14px",
+};
+
+const diaChip = {
+  borderRadius: 999,
+  width: 40,
+  height: 40,
+  border: "1px solid #ff69b4",
+  fontWeight: "bold",
+  fontSize: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "0.2s",
+};
+
+const filaDia = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  backgroundColor: "#111",
+  padding: "8px 12px",
+  borderRadius: 10,
+  marginBottom: 8,
+  fontSize: 13,
+  border: "1px solid rgba(255,105,180,0.2)",
+};
+
+const filaDiaLabel = {
+  color: "#ffb3e1",
+  width: 32,
+  fontWeight: 700,
+  textAlign: "center",
+};
+
+const filaDiaHoras = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+};
+
+/* Inputs */
+const inputStyle = {
+  padding: 10,
+  borderRadius: 12,
+  border: "2px solid #ff69b4",
+  backgroundColor: "#000000",
+  color: "#fff",
+  outline: "none",
+  fontSize: 14,
+  boxShadow: "0 0 12px rgba(255,105,180,0.25)",
+};
+
+/* Select estilo rueda simple */
+const selectWheel = {
+  backgroundColor: "#000",
+  color: "#fff",
+  border: "2px solid #ff69b4",
+  borderRadius: 14,
+  padding: "5px 6px",
+  fontSize: 13,
+  width: 80,
+  cursor: "pointer",
+  textAlign: "center",
+  boxShadow: "0 0 12px rgba(255,105,180,0.3)",
+};
+
+const botonPublicar = {
+  marginTop: 18,
+  width: "100%",
+  padding: 12,
+  background:
+    "linear-gradient(90deg, rgba(255,105,180,1), rgba(255,20,147,1))",
+  border: "none",
+  borderRadius: 16,
+  color: "#000",
+  fontWeight: "bold",
+  cursor: "pointer",
+  fontSize: 16,
+  boxShadow: "0 0 20px rgba(255,105,180,0.7)",
+  transition: "transform 0.15s ease, box-shadow 0.15s ease",
+};
+
+/* Panel Mis canchas */
+const misCanchasPanel = {
+  background:
+    "linear-gradient(145deg, rgba(10,0,20,0.96), rgba(0,0,0,0.98))",
+  padding: 22,
+  borderRadius: 24,
+  boxShadow: "0 25px 60px rgba(0,0,0,0.9)",
+  border: "1px solid rgba(255,105,180,0.4)",
+  minHeight: 350,
+  maxHeight: "85vh",
+  overflowY: "auto",
+  color: "#fff",
+};
+
+const misCanchasHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "baseline",
+  marginBottom: 12,
+};
+
+const misCanchasTitle = {
+  color: "#ff79c4",
+  textAlign: "left",
+  margin: 0,
+  fontSize: "1.2rem",
+  fontWeight: 800,
+};
+
+const misCanchasSubtitle = {
+  color: "#ffe6f3",
+  fontSize: "0.8rem",
+  marginTop: 4,
+  opacity: 0.85,
+};
+
+const misCanchasGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: 15,
+  marginTop: 10,
+};
+
+const misCanchaCard = {
+  backgroundColor: "#050308",
+  padding: 16,
+  borderRadius: 16,
+  boxShadow: "0 0 18px rgba(255,105,180,0.15)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  cursor: "pointer",
+  border: "1px solid rgba(255,105,180,0.35)",
+};
+
+const misCanchaHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "baseline",
+  marginBottom: 4,
+};
+
+const misCanchaName = {
+  color: "#fff",
+  fontSize: 17,
+  fontWeight: 700,
+  margin: 0,
+};
+
+const misCanchaId = {
+  fontSize: 11,
+  color: "#ffd1e8",
+};
+
+const misCanchaLine = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  color: "#fff",
+  fontSize: 13,
+  margin: "2px 0",
+};
+
+const misCanchaHorarioLabel = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  color: "#fff",
+  fontSize: 13,
+  marginBottom: 4,
+};
+
+const misCanchaHorarioGrid = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 6,
+  fontSize: 12,
+};
+
+const misCanchaHorarioChip = {
+  backgroundColor: "#151120",
+  color: "#fff",
+  padding: "4px 8px",
+  borderRadius: 8,
+  border: "1px solid rgba(255,105,180,0.4)",
+};
+
+const misCanchaSinHorario = {
+  color: "#bbb",
+  fontSize: 12,
 };

@@ -193,6 +193,92 @@ router.get("/mios", authRequired, async (req, res) => {
 });
 
 /**
+ * DELETE /api/partidos/mios/:id
+ *
+ * Borra un partido de "Mis partidos" para el usuario actual.
+ * - Si es organizador -> elimina el partido completo (y sus datos relacionados).
+ * - Si es solo jugador -> pone su participación en 'baja' (ya no aparece en /mios).
+ */
+router.delete("/mios/:id", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const partidoId = Number(req.params.id || 0);
+
+    if (!partidoId) {
+      return res.status(400).json({ error: "ID de partido inválido" });
+    }
+
+    // Verificamos si el partido existe y quién es el organizador
+    const info = await pool.query(
+      `
+      SELECT id, organizador_id
+      FROM partidos
+      WHERE id = $1
+      `,
+      [partidoId]
+    );
+
+    if (!info.rows.length) {
+      return res.status(404).json({ error: "Partido no encontrado" });
+    }
+
+    const partido = info.rows[0];
+
+    // 👉 Si soy el organizador: borro el partido completo
+    if (partido.organizador_id === userId) {
+      // Borrar mensajes del partido
+      await pool.query(
+        "DELETE FROM mensajes_partido WHERE partido_id = $1",
+        [partidoId]
+      );
+
+      // Borrar participantes del partido
+      await pool.query(
+        "DELETE FROM participantes_partido WHERE partido_id = $1",
+        [partidoId]
+      );
+
+      // Borrar el partido
+      await pool.query(
+        "DELETE FROM partidos WHERE id = $1 AND organizador_id = $2",
+        [partidoId, userId]
+      );
+
+      return res.json({
+        ok: true,
+        modo: "partido_eliminado_organizador",
+      });
+    }
+
+    // 👉 Si NO soy organizador: solo oculto mi participación (estado = 'baja')
+    const upd = await pool.query(
+      `
+      UPDATE participantes_partido
+      SET estado = 'baja'
+      WHERE partido_id = $1
+        AND usuario_id = $2
+        AND estado = 'confirmado'
+      `,
+      [partidoId, userId]
+    );
+
+    if (!upd.rowCount) {
+      return res
+        .status(400)
+        .json({ error: "No estabas inscrito en este partido" });
+    }
+
+    return res.json({
+      ok: true,
+      modo: "participacion_baja",
+    });
+  } catch (e) {
+    console.error("DELETE /api/partidos/mios/:id", e);
+    res.status(500).json({ error: "Error al borrar el partido" });
+  }
+});
+
+/**
  * POST /api/partidos/:id/unirse
  *
  * El usuario logueado se inscribe en el partido.
@@ -218,7 +304,9 @@ router.post("/:id/unirse", authRequired, async (req, res) => {
       [partidoId, userId]
     );
     if (ya.rows.length) {
-      return res.status(400).json({ error: "Ya estás inscrito en este partido" });
+      return res
+        .status(400)
+        .json({ error: "Ya estás inscrito en este partido" });
     }
 
     // Info de cupos

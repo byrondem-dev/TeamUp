@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -19,8 +18,8 @@ const DetallesCanchaDueno = lazy(() =>
   import("./pages/DetallesCanchaDueno.jsx")
 );
 // ✅ Detalle de partido (jugador)
-const PartidoDetalle  = lazy(() =>
-  import("./pages/PartidoDetalle.jsx")
+const DetallePartido  = lazy(() =>
+  import("./pages/DetallePartido.jsx")  // Aquí corregimos el nombre a DetallePartido
 );
 // ✅ Mis partidos (organizador o jugador inscrito)
 const MisPartidos     = lazy(() =>
@@ -162,7 +161,7 @@ export default function App() {
           path="/partido/:id"
           element={
             <Protected>
-              <PartidoDetalle />
+              <DetallePartido />  {/* Aquí se usa DetallePartido */}
             </Protected>
           }
         />

@@ -28,7 +28,7 @@ function buildHourlySlots(inicio, fin, stepMin = 60) {
 
 function parseYMD(ymd) {
   const [y, m, d] = (ymd || "").split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  return new Date(y || 2000, (m || 1) - 1, d || 1);
 }
 
 function dateToDayKey(ymd) {
@@ -58,11 +58,31 @@ const CLP = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
+// ==== inyectar keyframes de animación una sola vez ====
+let animationsInjected = false;
+function injectAnimations() {
+  if (animationsInjected || typeof document === "undefined") return;
+  const style = document.createElement("style");
+  style.innerHTML = `
+@keyframes fadeUpSoft {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInSoft {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+`;
+  document.head.appendChild(style);
+  animationsInjected = true;
+}
+
 export default function CanchaDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 👇 venir con datos desde ReservarCancha si es que venía en state
   const canchaFromState = location.state?.cancha || null;
 
   const [cancha, setCancha] = useState(canchaFromState);
@@ -80,49 +100,31 @@ export default function CanchaDetalle() {
   const [ocupacion, setOcupacion] = useState([]); // reservas + partidos
   const [loadingOcup, setLoadingOcup] = useState(false);
 
-  // selección varios tramos
   const [slotsSeleccionados, setSlotsSeleccionados] = useState([]); // array de horas
   const [reservaConfirmada, setReservaConfirmada] = useState(false);
 
-  // 🔍 Log de render para ver id, loading y cancha
-  console.log(
-    "[RENDER CanchaDetalle] id:",
-    id,
-    "| loadingCancha:",
-    loadingCancha,
-    "| cancha:",
-    cancha
-  );
-
-  // 🔥 Traer la cancha completa del backend por ID (una sola vez por id)
+  // 👇 siempre partir arriba + inyectar animaciones
   useEffect(() => {
-    console.log("[EFFECT detalle] se ejecuta con id:", id);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    injectAnimations();
+  }, []);
 
-    if (!id) {
-      console.warn(
-        "[EFFECT detalle] No hay id (undefined/null/''), no se pide cancha"
-      );
-      return;
-    }
+  // 🔥 Traer la cancha completa del backend por ID
+  useEffect(() => {
+    if (!id) return;
 
     (async () => {
       try {
         setLoadingCancha(true);
         setErrorCancha("");
-        console.log("[EFFECT detalle] Pidiendo detalle de cancha", id);
         const data = await Api.canchaDetalle(Number(id));
-        console.log("[EFFECT detalle] Detalle cancha respuesta:", data);
         setCancha((prev) => (prev ? { ...prev, ...data } : data));
       } catch (err) {
-        console.error("[EFFECT detalle] CANCHA DETALLE ERROR:", err);
         setErrorCancha(
           err.message || "No se pudo cargar la información de la cancha."
         );
         setCancha(null);
       } finally {
-        console.log(
-          "[EFFECT detalle] Terminó petición detalle, se setea loadingCancha=false"
-        );
         setLoadingCancha(false);
       }
     })();
@@ -130,14 +132,7 @@ export default function CanchaDetalle() {
 
   // cargar horas ocupadas para esa fecha
   useEffect(() => {
-    console.log("[EFFECT ocupacion] se ejecuta con id:", id, "fecha:", fecha);
-
-    if (!id) {
-      console.warn(
-        "[EFFECT ocupacion] No hay id (undefined/null/''), no se pide ocupación"
-      );
-      return;
-    }
+    if (!id) return;
 
     (async () => {
       setLoadingOcup(true);
@@ -146,15 +141,10 @@ export default function CanchaDetalle() {
           cancha_id: Number(id),
           fecha,
         });
-        console.log("[EFFECT ocupacion] respuesta ocupación:", data);
         setOcupacion(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("[EFFECT ocupacion] ERROR:", err);
         setOcupacion([]);
       } finally {
-        console.log(
-          "[EFFECT ocupacion] Terminó petición ocupación, loadingOcup=false"
-        );
         setLoadingOcup(false);
       }
     })();
@@ -162,72 +152,37 @@ export default function CanchaDetalle() {
 
   // si cambias la fecha, se limpia la selección estética
   useEffect(() => {
-    console.log(
-      "[EFFECT fecha] Cambio de fecha a:",
-      fecha,
-      " → limpiando selección y reservaConfirmada"
-    );
     setSlotsSeleccionados([]);
     setReservaConfirmada(false);
   }, [fecha]);
 
-  const dayKey = useMemo(() => {
-    const k = dateToDayKey(fecha);
-    console.log("[MEMO dayKey] fecha:", fecha, "→ dayKey:", k);
-    return k;
-  }, [fecha]);
+  const dayKey = useMemo(() => dateToDayKey(fecha), [fecha]);
 
   // 👉 SOLO usamos lo que venga de cancha.disponibilidad
   const baseDia = useMemo(() => {
     const disp = cancha?.disponibilidad;
-    if (!disp) {
-      console.log("[MEMO baseDia] cancha.disponibilidad vacío o undefined");
-      return null;
-    }
+    if (!disp) return null;
+
     const d = disp[dayKey];
-    if (!d) {
-      console.log("[MEMO baseDia] No hay config para dayKey:", dayKey);
-      return null;
-    }
+    if (!d) return null;
+
     if (d.habilitado === false) {
-      console.log("[MEMO baseDia] Día no habilitado:", dayKey, d);
       return { habilitado: false };
     }
-    if (!d.inicio || !d.fin) {
-      console.log(
-        "[MEMO baseDia] Falta inicio o fin en disponibilidad del día:",
-        dayKey,
-        d
-      );
-      return null;
-    }
-    const base = {
+    if (!d.inicio || !d.fin) return null;
+
+    return {
       habilitado: d.habilitado ?? true,
       inicio: d.inicio,
       fin: d.fin,
     };
-    console.log("[MEMO baseDia] baseDia calculado:", base);
-    return base;
   }, [cancha, dayKey]);
 
   const slots = useMemo(() => {
     if (!baseDia || !baseDia.habilitado || !baseDia.inicio || !baseDia.fin) {
-      console.log(
-        "[MEMO slots] No se generan slots porque baseDia es inválido:",
-        baseDia
-      );
       return [];
     }
-    const s = buildHourlySlots(baseDia.inicio, baseDia.fin, 60);
-    console.log(
-      "[MEMO slots] Slots generados para",
-      baseDia.inicio,
-      "→",
-      baseDia.fin,
-      ":",
-      s
-    );
-    return s;
+    return buildHourlySlots(baseDia.inicio, baseDia.fin, 60);
   }, [baseDia]);
 
   const esOcupado = (inicio) => {
@@ -240,20 +195,15 @@ export default function CanchaDetalle() {
   };
 
   const handleConfirmarEstetico = () => {
-    console.log(
-      "[ACCION] Confirmar reserva estética. Slots seleccionados:",
-      slotsSeleccionados
-    );
     if (slotsSeleccionados.length === 0) return;
     setReservaConfirmada(true);
   };
 
   // ===== estados de carga / error de CANCHA =====
   if (loadingCancha) {
-    console.log("[RENDER] Mostrando loader de cancha...");
     return (
       <div style={pageBg}>
-        <div style={loaderCard}>
+        <div style={{ ...loaderCard, animation: "fadeInSoft 0.4s ease-out" }}>
           <p style={{ color: "#fff", fontSize: "0.95rem" }}>
             Cargando cancha...
           </p>
@@ -263,19 +213,25 @@ export default function CanchaDetalle() {
   }
 
   if (!cancha || errorCancha) {
-    console.log(
-      "[RENDER] Error o cancha nula. errorCancha:",
-      errorCancha,
-      "cancha:",
-      cancha
-    );
     return (
       <div style={pageBg}>
-        <div style={loaderCard}>
+        <div style={{ ...loaderCard, animation: "fadeInSoft 0.4s ease-out" }}>
           <p style={{ color: "#ffb3c7", fontSize: "0.95rem" }}>
             {errorCancha || "No se pudo cargar la cancha."}
           </p>
-          <button style={backBtn} onClick={() => navigate(-1)}>
+          <button
+            style={backBtn}
+            onClick={() => navigate(-1)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px) scale(1.02)";
+              e.currentTarget.style.boxShadow =
+                "0 0 14px rgba(255,105,180,.8)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             ⬅ Volver
           </button>
         </div>
@@ -309,14 +265,6 @@ export default function CanchaDetalle() {
     !!baseDia && baseDia.habilitado && baseDia.inicio && baseDia.fin;
 
   const handleIrAPagar = () => {
-    console.log(
-      "[ACCION] Ir a pagar. Confirmada:",
-      reservaConfirmada,
-      "slots:",
-      slotsSeleccionados,
-      "fecha:",
-      fecha
-    );
     if (horasSeleccionadasCount === 0) return;
 
     navigate("/pago-reserva", {
@@ -342,10 +290,27 @@ export default function CanchaDetalle() {
 
   return (
     <div style={pageBg}>
-      <div style={detailCard}>
+      <div
+        style={{
+          ...detailCard,
+          animation: "fadeUpSoft 0.4s ease-out",
+        }}
+      >
         {/* Barra superior */}
         <div style={topRow}>
-          <button onClick={() => navigate(-1)} style={backBtn}>
+          <button
+            onClick={() => navigate(-1)}
+            style={backBtn}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px) scale(1.02)";
+              e.currentTarget.style.boxShadow =
+                "0 0 14px rgba(255,105,180,.8)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             ⬅ Volver
           </button>
 
@@ -359,7 +324,20 @@ export default function CanchaDetalle() {
         <div style={mainRow}>
           {/* Columna izquierda */}
           <div style={leftCol}>
-            <div style={photoCard}>
+            <div
+              style={photoCard}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform =
+                  "translateY(-4px) scale(1.02)";
+                e.currentTarget.style.boxShadow =
+                  "0 22px 40px rgba(0,0,0,.95)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0) scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 18px 40px rgba(0,0,0,.85)";
+              }}
+            >
               <img
                 src={
                   cancha.img ||
@@ -572,6 +550,17 @@ export default function CanchaDetalle() {
                         type="button"
                         style={primaryBtn}
                         onClick={handleConfirmarEstetico}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform =
+                            "translateY(-1px) scale(1.02)";
+                          e.currentTarget.style.boxShadow =
+                            "0 0 16px rgba(255,105,180,.8)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform =
+                            "translateY(0) scale(1)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
                       >
                         Confirmar reserva
                       </button>
@@ -581,6 +570,14 @@ export default function CanchaDetalle() {
                         onClick={() => {
                           setSlotsSeleccionados([]);
                           setReservaConfirmada(false);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform =
+                            "translateY(-1px) scale(1.02)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform =
+                            "translateY(0) scale(1)";
                         }}
                       >
                         Limpiar selección
@@ -593,6 +590,14 @@ export default function CanchaDetalle() {
                           type="button"
                           style={payBtn}
                           onClick={handleIrAPagar}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform =
+                              "translateY(-1px) scale(1.02)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform =
+                              "translateY(0) scale(1)";
+                          }}
                         >
                           Ir a pagar 💳
                         </button>
@@ -633,8 +638,12 @@ export default function CanchaDetalle() {
                         {o.hora_inicio?.slice(0, 5)}–
                         {o.hora_fin?.slice(0, 5)}
                       </span>
-                      <span style={{ opacity: 0.85, fontSize: "0.85rem" }}>
-                        {o.tipo === "partido" ? "Partido publicado" : "Reserva"}
+                      <span
+                        style={{ opacity: 0.85, fontSize: "0.85rem" }}
+                      >
+                        {o.tipo === "partido"
+                          ? "Partido publicado"
+                          : "Reserva"}
                       </span>
                     </div>
                   ))}
@@ -699,6 +708,7 @@ const backBtn = {
   fontSize: "0.85rem",
   fontWeight: 600,
   letterSpacing: "0.02em",
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
 const topLabel = {
@@ -740,6 +750,7 @@ const photoCard = {
   overflow: "hidden",
   height: 210,
   boxShadow: "0 18px 40px rgba(0,0,0,.85)",
+  transition: "transform .2s ease, box-shadow .2s ease",
 };
 
 const priceBadge = {
@@ -792,6 +803,7 @@ const sectionCard = {
     "linear-gradient(145deg, rgba(18,0,26,.96), rgba(0,0,0,.98))",
   border: "1px solid rgba(255,105,180,.28)",
   color: "#ffe6f3",
+  transition: "transform .18s ease, box-shadow .18s ease",
 };
 
 const sectionHeader = {
@@ -862,7 +874,7 @@ const slotPill = {
   fontSize: "0.83rem",
   fontWeight: 700,
   textAlign: "center",
-  transition: "transform .08s ease-out, box-shadow .08s ease-out",
+  transition: "transform .08s ease-out, box-shadow .08s ease-out, background .08s ease-out, border .08s ease-out, color .08s ease-out",
   boxShadow: "0 0 0 rgba(0,0,0,0)",
 };
 
@@ -937,6 +949,7 @@ const primaryBtn = {
   fontSize: "0.9rem",
   cursor: "pointer",
   letterSpacing: "0.04em",
+  transition: "transform .15s ease, box-shadow .15s ease",
 };
 
 const ghostBtn = {
@@ -948,6 +961,7 @@ const ghostBtn = {
   fontWeight: 600,
   fontSize: "0.85rem",
   cursor: "pointer",
+  transition: "transform .15s ease",
 };
 
 const tinyNote = {
@@ -969,4 +983,5 @@ const payBtn = {
   cursor: "pointer",
   letterSpacing: "0.05em",
   boxShadow: "0 0 14px rgba(109,255,191,.7)",
+  transition: "transform .15s ease",
 };

@@ -91,7 +91,7 @@ router.get("/mis", authRequired, async (req, res) => {
     const q = `
       SELECT
         r.id,
-        r.cancha_id AS cancha_id,      -- 👈 AHORA SÍ LO DEVOLVEMOS
+        r.cancha_id AS cancha_id,
         r.fecha,
         r.hora_inicio,
         r.hora_fin,
@@ -110,6 +110,72 @@ router.get("/mis", authRequired, async (req, res) => {
   } catch (e) {
     console.error("MIS RESERVAS 500:", e);
     res.status(500).json({ error: "Error de servidor" });
+  }
+});
+
+/**
+ * DELETE /api/reservas/mis/pasadas
+ * Borra TODAS las reservas PASADAS del usuario logueado
+ * (definimos "pasada" como fecha < hoy)
+ */
+router.delete("/mis/pasadas", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { rows } = await pool.query(
+      `
+      DELETE FROM reservas
+      WHERE usuario_id = $1
+        AND fecha < CURRENT_DATE
+      RETURNING id
+    `,
+      [userId]
+    );
+
+    return res.json({
+      borradas: rows.map((r) => r.id),
+    });
+  } catch (e) {
+    console.error("DELETE /reservas/mis/pasadas 500:", e);
+    return res
+      .status(500)
+      .json({ error: "Error al borrar reservas pasadas" });
+  }
+});
+
+/**
+ * DELETE /api/reservas/:id
+ * Borra UNA reserva, solo si pertenece al usuario logueado
+ */
+router.delete("/:id", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const id = Number(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({ error: "ID de reserva inválido" });
+    }
+
+    const { rows } = await pool.query(
+      `
+      DELETE FROM reservas
+      WHERE id = $1
+        AND usuario_id = $2
+      RETURNING *
+    `,
+      [id, userId]
+    );
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Reserva no encontrada o no es tuya." });
+    }
+
+    return res.json({ ok: true, reserva: rows[0] });
+  } catch (e) {
+    console.error("DELETE /reservas/:id 500:", e);
+    return res.status(500).json({ error: "Error al borrar la reserva" });
   }
 });
 

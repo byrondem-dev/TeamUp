@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Api } from "../api";
 import { Home } from "lucide-react";
+import { motion } from "framer-motion";
 
 // ==== Orden días ====
 const DAY_ORDER = ["L", "M", "X", "J", "V", "S", "D"];
@@ -208,7 +209,12 @@ function HoraPicker({ value, onChange }) {
   };
 
   return (
-    <div style={pickerIOSbox}>
+    <motion.div
+      style={pickerIOSbox}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35 }}
+    >
       {/* HORAS */}
       <div ref={horasRef} style={iosColumn} onScroll={onScrollHoras}>
         {horasLoop.map((h, idx) => (
@@ -241,7 +247,7 @@ function HoraPicker({ value, onChange }) {
 
       {/* Franja central */}
       <div style={iosHighlight} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -275,19 +281,21 @@ export default function ReservarCancha() {
     return () => clearTimeout(id);
   }, []);
 
-  // ✅ CARGA GENERAL DE CANCHAS (modo "ver todas")
+  // ✅ CARGA GENERAL DE CANCHAS (modo "ver todas", SIN filtros de fecha/hora)
   useEffect(() => {
     if (filtroActivo) return; // si estás buscando, no tocar los resultados
 
     (async () => {
       try {
-        const dataDisp = await Api.disponibilidad({ fecha, duracion });
-        const lista = Array.isArray(dataDisp) ? dataDisp : [];
+        const data = await Api.canchas(); // TODAS las canchas
+        const lista = Array.isArray(data) ? data : [];
         setCanchas(lista);
         setVisibleCount(Math.min(6, lista.length || 0));
-      } catch {}
+      } catch (err) {
+        console.error(err);
+      }
     })();
-  }, [fecha, duracion, filtroActivo]);
+  }, [filtroActivo]);
 
   // ===== infinite scroll cuando NO hay filtro (mostrar todas) =====
   useEffect(() => {
@@ -388,9 +396,12 @@ export default function ReservarCancha() {
     }
   };
 
+  // 👇 Mostrar todas las canchas (sin filtros de fecha/hora)
   const limpiarFiltro = () => {
     setFiltroActivo(false);
     setHora("");
+    setUbicacion("");
+    // El useEffect de arriba recarga TODAS las canchas con Api.canchas()
   };
 
   const handleReservarDirecto = async () => {
@@ -457,122 +468,212 @@ export default function ReservarCancha() {
   // ===== UI =====
   return (
     <div style={pageWrapper}>
-      {/* overlay degradado tipo BuscarPartido */}
       <div style={bgOverlay} />
 
-      <button
+      <motion.button
         type="button"
         onClick={() => navigate("/")}
         style={homeBtn}
+        whileHover={{ scale: 1.05, x: 2 }}
+        whileTap={{ scale: 0.95 }}
       >
         <Home size={18} />
         <span>Inicio</span>
-      </button>
+      </motion.button>
 
-      <div style={layout}>
-        {/* Izquierda: formulario (ENTER dispara submit) */}
-        <form
-          onSubmit={handleBuscarDisponibilidad}
-          style={{ ...leftCard, flex: "0 0 360px", maxWidth: 420 }}
-        >
-          <h1 style={h1Style}>Reservar Cancha</h1>
-
-          {/* Ubicación */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={labelText}>Ubicación o nombre</div>
-            <div style={searchWrapper}>
-              <span style={searchIcon}>🔍</span>
-              <input
-                ref={autocompleteRef}
-                type="text"
-                placeholder="Buscar por ubicación o nombre"
-                value={ubicacion}
-                onChange={(e) => setUbicacion(e.target.value)}
-                style={searchInput}
-              />
-            </div>
-          </div>
-
-          {/* Fecha + duración */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: 12,
-            }}
+      <motion.div
+        style={layout}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        {/* HERO IZQUIERDA + FORMULARIO DERECHA */}
+        <div style={heroRow}>
+          {/* Hero izquierda */}
+          <motion.section
+            style={heroLeft}
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <div>
-              <div style={labelText}>Fecha</div>
-              <input
-                type="date"
-                min={minDate}
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                style={input}
-              />
+            <div style={heroBadgeRow}>
+              <span style={heroDot} />
+              <span style={heroBadgeText}>Buscador de canchas</span>
             </div>
 
-            <div>
-              <div style={labelText}>Duración</div>
-              <select
-                value={duracion}
-                onChange={(e) => setDuracion(Number(e.target.value))}
-                style={input}
-              >
-                <option value={60}>60 min</option>
-                <option value={90}>90 min</option>
-                <option value={120}>120 min</option>
-              </select>
-            </div>
-          </div>
+            <h1 style={heroTitle}>
+              Encuentra tu próximo
+              <br />
+              partido de fútbol
+            </h1>
 
-          {/* Reloj estilo iOS */}
-          <div style={{ marginTop: 20 }}>
-            <div style={sectionTitle}>Seleccionar hora</div>
-            <div style={pickerIOSwrapper}>
-              <HoraPicker value={hora} onChange={setHora} />
-            </div>
-            <div style={horaTextoActual}>{horaLabelDebajo}</div>
-          </div>
+            <p style={heroSubtitle}>
+              Elige tu ciudad, fecha y estilo de partido. Nosotros te
+              mostramos las canchas y equipos que necesitan jugadores,
+              sin grupos raros, todo en un solo lugar.
+            </p>
 
-          {/* Botón buscar */}
-          <div style={{ marginTop: 20 }}>
-            <button
-              type="submit"
-              style={{ ...btnPrimary, width: "100%" }}
+            <div style={heroPillsRow}>
+              <span style={heroPill}>5 vs 5 · 7 vs 7 · 11 vs 11</span>
+              <span style={heroPill}>Canchas hoy y mañana</span>
+              <span style={heroPill}>Amistosos y torneos</span>
+            </div>
+
+            <div style={heroStepsRow}>
+              <div style={heroStepCard}>
+                <div style={heroStepNumber}>1</div>
+                <div>
+                  <div style={heroStepTitle}>Busca</div>
+                  <div style={heroStepText}>
+                    Filtra por ciudad, fecha y rango horario.
+                  </div>
+                </div>
+              </div>
+
+              <div style={heroStepCard}>
+                <div style={heroStepNumber}>2</div>
+                <div>
+                  <div style={heroStepTitle}>Elige</div>
+                  <div style={heroStepText}>
+                    Revisa canchas, tipo de pasto y precio.
+                  </div>
+                </div>
+              </div>
+
+              <div style={heroStepCard}>
+                <div style={heroStepNumber}>3</div>
+                <div>
+                  <div style={heroStepTitle}>Juega</div>
+                  <div style={heroStepText}>
+                    Confirma tu cupo y solo preocúpate de asistir.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Formulario derecha */}
+          <motion.form
+            onSubmit={handleBuscarDisponibilidad}
+            style={searchCard}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          >
+            <div style={searchHeader}>
+              <h2 style={h1Style}>Buscar canchas</h2>
+              <p style={searchSubtitle}>
+                Completa los datos y te mostraremos canchas disponibles
+                según tu fecha y horario.
+              </p>
+            </div>
+
+            {/* Ubicación */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={labelText}>Ciudad o zona</div>
+              <div style={searchWrapper}>
+                <span style={searchIcon}>📍</span>
+                <input
+                  ref={autocompleteRef}
+                  type="text"
+                  placeholder="Ej: Maipú, Ñuñoa, Quilicura..."
+                  value={ubicacion}
+                  onChange={(e) => setUbicacion(e.target.value)}
+                  style={searchInput}
+                />
+              </div>
+            </div>
+
+            {/* Fecha + duración */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+              }}
             >
-              Buscar disponibilidad
-            </button>
-          </div>
+              <div>
+                <div style={labelText}>Fecha</div>
+                <input
+                  type="date"
+                  min={minDate}
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  style={input}
+                />
+              </div>
 
-          {/* Estado del filtro */}
-          <div style={estadoFiltroText}>
-            {filtroActivo ? (
-              <>
-                {canchas.length} resultados para{" "}
-                {horaBonita && horaFinBonita
-                  ? `${horaBonita} – ${horaFinBonita}`
-                  : "—"}{" "}
-                — {diaSemana(fecha)} {fechaCorta(fecha)}
-                <button
-                  type="button"
-                  onClick={limpiarFiltro}
-                  style={{ ...btnGhost, marginLeft: 8 }}
+              <div>
+                <div style={labelText}>Duración</div>
+                <select
+                  value={duracion}
+                  onChange={(e) => setDuracion(Number(e.target.value))}
+                  style={input}
                 >
-                  Ver todas
-                </button>
-              </>
-            ) : (
-              <>
-                Mostrando todas las canchas — {diaSemana(fecha)}{" "}
-                {fechaCorta(fecha)}
-              </>
-            )}
-          </div>
-        </form>
+                  <option value={60}>60 min</option>
+                  <option value={90}>90 min</option>
+                  <option value={120}>120 min</option>
+                </select>
+              </div>
+            </div>
 
-        {/* Derecha: resultados */}
-        <section style={{ flex: "1 1 0", minWidth: 0 }}>
+            {/* Reloj estilo iOS */}
+            <div style={{ marginTop: 20 }}>
+              <div style={labelText}>Horario preferido</div>
+              <div style={pickerIOSwrapper}>
+                <HoraPicker value={hora} onChange={setHora} />
+              </div>
+              <div style={horaTextoActual}>{horaLabelDebajo}</div>
+            </div>
+
+            {/* Botón buscar */}
+            <div style={{ marginTop: 20 }}>
+              <motion.button
+                type="submit"
+                style={{ ...btnPrimary, width: "100%" }}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0 0 26px rgba(255,105,180,0.9)",
+                }}
+                whileTap={{ scale: 0.96 }}
+              >
+                Buscar disponibilidad
+              </motion.button>
+            </div>
+
+            {/* Estado del filtro */}
+            <div style={estadoFiltroText}>
+              {filtroActivo ? (
+                <>
+                  {canchas.length} resultados para{" "}
+                  {horaBonita && horaFinBonita
+                    ? `${horaBonita} – ${horaFinBonita}`
+                    : "—"}{" "}
+                  — {diaSemana(fecha)} {fechaCorta(fecha)}
+                  <motion.button
+                    type="button"
+                    onClick={limpiarFiltro}
+                    style={{ ...btnGhost, marginLeft: 8 }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.96 }}
+                  >
+                    Mostrar todas las canchas
+                  </motion.button>
+                </>
+              ) : (
+                <>Mostrando todas las canchas sin filtros.</>
+              )}
+            </div>
+          </motion.form>
+        </div>
+
+        {/* RESULTADOS ABAJO */}
+        <motion.section
+          style={resultsSection}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
+        >
           <div style={cardsHeaderRow}>
             <h2 style={h2Style}>
               {filtroActivo
@@ -583,16 +684,25 @@ export default function ReservarCancha() {
           </div>
 
           <div style={cardsGrid}>
-            {canchasToShow.map((c) => {
+            {canchasToShow.map((c, idx) => {
               const disp = getDispSemana(c);
               const selectedDay = selDiaPorCancha[c.id] || dayKeyForFecha;
               const infoSel = disp?.[selectedDay];
 
               return (
-                <article
+                <motion.article
                   key={c.id}
                   onClick={() => handleVerCancha(c)}
                   style={card}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    delay: 0.05 * idx,
+                    ease: "easeOut",
+                  }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <div style={{ position: "relative", height: 170 }}>
                     <img
@@ -619,7 +729,7 @@ export default function ReservarCancha() {
                       {CLP.format(Number(c.precio || c.precio_base || 0))}
                     </div>
 
-                    {/* Fecha */}
+                    {/* Fecha seleccionada como referencia visual */}
                     <div style={dateBadge}>
                       📅 {diaSemana(fecha)} {fechaCorta(fecha)}
                     </div>
@@ -651,7 +761,7 @@ export default function ReservarCancha() {
                             color: "#ffd1e8",
                           }}
                         >
-                          {c.id}
+                          ID {c.id}
                         </span>
                       )}
                     </div>
@@ -682,7 +792,6 @@ export default function ReservarCancha() {
                             ? { ...base, ...weekDotSel }
                             : base;
 
-                          // Texto del tooltip
                           let titleText = DAY_LABEL[dk];
                           if (info) {
                             titleText = info.habilitado
@@ -733,34 +842,36 @@ export default function ReservarCancha() {
                               : `${infoSel.inicio}–${infoSel.fin}`}
                           </div>
                           {infoSel?.habilitado && (
-                            <button
+                            <motion.button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleVerCancha(c);
                               }}
                               style={reservarCardBtn}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                             >
                               Reservar
-                            </button>
+                            </motion.button>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
-                </article>
+                </motion.article>
               );
             })}
           </div>
-        </section>
-      </div>
+        </motion.section>
+      </motion.div>
     </div>
   );
 }
 
 /* ===== Estilos ===== */
 
-// Fondo con Messi + overlay tipo BuscarPartido
+// Fondo con Messi + overlay estilo general
 const pageWrapper = {
   minHeight: "100vh",
   position: "relative",
@@ -783,26 +894,143 @@ const bgOverlay = {
 const layout = {
   maxWidth: 1200,
   margin: "0 auto",
-  display: "flex",
-  alignItems: "flex-start",
-  gap: 16,
-  flexWrap: "wrap",
   position: "relative",
   zIndex: 2,
   paddingTop: 80,
+  paddingBottom: 40,
 };
 
-const h1Style = {
-  marginTop: 0,
+/* ===== Hero izquierda ===== */
+const heroRow = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.05fr)",
+  gap: 28,
+  alignItems: "stretch",
+  marginBottom: 28,
+};
+
+const heroLeft = {
+  color: "#ffe6f3",
+};
+
+const heroBadgeRow = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "6px 14px",
+  borderRadius: 999,
+  background: "rgba(0,0,0,0.85)",
+  border: "1px solid rgba(255,105,180,0.7)",
+  fontSize: "0.75rem",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  marginBottom: 18,
+};
+
+const heroDot = {
+  width: 8,
+  height: 8,
+  borderRadius: "50%",
+  background: "#32ffb5",
+  boxShadow: "0 0 10px rgba(50,255,181,0.9)",
+};
+
+const heroBadgeText = {
+  color: "#ffd1e8",
+};
+
+const heroTitle = {
+  margin: 0,
+  fontSize: "2.6rem",
+  lineHeight: 1.1,
+  fontWeight: 900,
+  backgroundImage:
+    "linear-gradient(120deg,#ffffff,#ffb3e1,#ff69b4,#ffd1e8)",
+  WebkitBackgroundClip: "text",
+  color: "transparent",
+};
+
+const heroSubtitle = {
+  marginTop: 14,
+  marginBottom: 14,
+  fontSize: "0.95rem",
+  maxWidth: 520,
+  color: "#ffe6f3",
+  opacity: 0.9,
+};
+
+const heroPillsRow = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
   marginBottom: 16,
-  fontSize: "1.8rem",
+};
+
+const heroPill = {
+  padding: "6px 12px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,105,180,0.7)",
+  background: "rgba(0,0,0,0.85)",
+  fontSize: "0.8rem",
+  color: "#ffd1e8",
+  fontWeight: 600,
+};
+
+const heroStepsRow = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+  gap: 12,
+  marginTop: 6,
+};
+
+const heroStepCard = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 10,
+  padding: 10,
+  borderRadius: 14,
+  background: "rgba(0,0,0,0.92)",
+  border: "1px solid rgba(255,105,180,0.6)",
+};
+
+const heroStepNumber = {
+  width: 22,
+  height: 22,
+  borderRadius: "50%",
+  background: "linear-gradient(135deg,#ff69b4,#ff1493)",
+  color: "#000",
+  fontWeight: 800,
+  fontSize: "0.8rem",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const heroStepTitle = {
+  fontSize: "0.85rem",
+  fontWeight: 700,
+  color: "#ffb3e1",
+};
+
+const heroStepText = {
+  fontSize: "0.8rem",
+  color: "#ffe6f3",
+  opacity: 0.9,
+};
+
+/* ===== Títulos y labels ===== */
+
+const h1Style = {
+  margin: 0,
+  marginBottom: 4,
+  fontSize: "1.4rem",
   fontWeight: 800,
   color: "#ff79c4",
 };
 
 const h2Style = {
   margin: "0 0 12px",
-  fontSize: "1.4rem",
+  fontSize: "1.3rem",
   fontWeight: 700,
   color: "#ffffff",
 };
@@ -816,13 +1044,27 @@ const labelText = {
   letterSpacing: "0.06em",
 };
 
-const sectionTitle = {
-  color: "#ff69b4",
-  marginBottom: 6,
-  fontSize: "0.9rem",
-  fontWeight: 700,
-  letterSpacing: "0.5px",
-  textTransform: "uppercase",
+/* ===== Formulario derecha ===== */
+
+const searchCard = {
+  background: "rgba(5,0,10,0.97)",
+  borderRadius: 24,
+  padding: 22,
+  color: "#fff",
+  border: "1px solid rgba(255,105,180,0.7)",
+  boxShadow: "0 0 30px rgba(0,0,0,0.9)",
+};
+
+const searchHeader = {
+  marginBottom: 14,
+};
+
+const searchSubtitle = {
+  margin: 0,
+  marginTop: 4,
+  fontSize: "0.85rem",
+  color: "#ffe6f3",
+  opacity: 0.9,
 };
 
 /* Estilos del HoraPicker iPhone */
@@ -838,7 +1080,7 @@ const pickerIOSbox = {
   alignItems: "center",
   gap: 10,
   padding: "10px 20px",
-  background: "#000000", // sin transparencia
+  background: "#000000",
   borderRadius: 20,
   border: "2px solid #ff69b4",
   boxShadow: "0 0 20px rgba(255,105,180,0.45)",
@@ -914,16 +1156,6 @@ const homeBtn = {
   fontSize: "0.85rem",
 };
 
-/* Panel izquierdo */
-const leftCard = {
-  background: "#000000", // sin transparencia
-  borderRadius: 20,
-  padding: 22,
-  color: "#fff",
-  border: "2px solid #ff69b4",
-  boxShadow: "0 0 25px rgba(255,105,180,0.4)",
-};
-
 /* Inputs */
 const input = {
   padding: "12px 14px",
@@ -969,7 +1201,7 @@ const btnPrimary = {
   border: "none",
   background: "linear-gradient(90deg,#ff69b4,#ff1493)",
   color: "#fff",
-  fontSize: "1.1rem",
+  fontSize: "1.05rem",
   fontWeight: 900,
   cursor: "pointer",
   boxShadow: "0 0 18px rgba(255,105,180,0.55)",
@@ -977,7 +1209,7 @@ const btnPrimary = {
 
 /* Botón Ghost */
 const btnGhost = {
-  padding: 10,
+  padding: 8,
   borderRadius: 12,
   border: "2px solid #ff69b4",
   background: "#000000",
@@ -997,9 +1229,20 @@ const chip = {
   fontSize: ".9rem",
 };
 
+/* Panel de resultados (tipo Mis reservas) */
+const resultsSection = {
+  marginTop: 8,
+  padding: 18,
+  borderRadius: 24,
+  background:
+    "linear-gradient(145deg, rgba(10,0,20,.96), rgba(0,0,0,.98))",
+  border: "1px solid rgba(255,105,180,.4)",
+  boxShadow: "0 25px 60px rgba(0,0,0,.9)",
+};
+
 /* Card de las canchas */
 const card = {
-  background: "#000000", // sin transparencia
+  background: "#000000",
   border: "2px solid #ff69b4",
   borderRadius: 20,
   overflow: "hidden",
@@ -1125,7 +1368,7 @@ const cardsHeaderRow = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "baseline",
-  marginBottom: 16,
+  marginBottom: 12,
 };
 
 const cardsHeaderMeta = {

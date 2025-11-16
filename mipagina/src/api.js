@@ -78,7 +78,7 @@ export const Api = {
   // Lista de canchas activas (home / reservar)
   canchas: () => http("/api/canchas"),
 
-  // Canshas del dueño logueado
+  // Canchas del dueño logueado
   misCanchas: () => http("/api/canchas/mis"),
 
   // Crear cancha (dueño)
@@ -138,12 +138,27 @@ export const Api = {
   // Reservas del usuario logueado (MisReservas.jsx)
   misReservas: () => http("/api/reservas/mis"),
 
+  // 🗑 Borrar UNA reserva (usada en "Borrar del historial")
+  eliminarReserva: (id) =>
+    http(`/api/reservas/${id}`, {
+      method: "DELETE",
+    }),
+
+  // 🧹 Borrar TODAS las reservas pasadas del usuario logueado
+  eliminarReservasPasadas: () =>
+    http("/api/reservas/mis/pasadas", {
+      method: "DELETE",
+    }),
+
   // ====================
   // ⚽ PARTIDOS
   // ====================
   // Listado básico de partidos (Resultados / BuscarPartido)
   // params puede tener: fecha, cancha_id, q, limit, offset
   partidos: (params = {}) => http(`/api/partidos${qs(params)}`),
+
+  // 👇 alias para poder usar Api.buscarPartidos(...) en Resultados.jsx
+  buscarPartidos: (params = {}) => http(`/api/partidos${qs(params)}`),
 
   // Crear partido desde "Me falta uno"
   crearPartido: (body) =>
@@ -160,6 +175,14 @@ export const Api = {
   // =========================
   // Partidos donde soy organizador o participante
   misPartidos: () => http("/api/partidos/mios"),
+
+  // 👉 Borrar partido pasado de "Mis partidos"
+  // - Si soy organizador: borra el partido completo en la BD
+  // - Si soy jugador: me da de baja y ya no aparece en /mios
+  borrarPartidoPasado: (id) =>
+    http(`/api/partidos/mios/${id}`, {
+      method: "DELETE",
+    }),
 
   // Unirse a un partido
   unirsePartido: (id) =>

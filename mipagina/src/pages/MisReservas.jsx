@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Api } from "../api";
+import { motion, AnimatePresence } from "framer-motion";
+import { Home } from "lucide-react";
 
 const CLP = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -73,8 +75,13 @@ export default function MisReservas() {
   const [descripcion, setDescripcion] = useState("");
   const [publicando, setPublicando] = useState(false);
 
-  // 🆕 Detalle de reserva seleccionada (para panel lateral)
+  // Detalle lateral
   const [detalleReserva, setDetalleReserva] = useState(null);
+
+  // 🔝 Siempre arriba al entrar
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -187,7 +194,7 @@ export default function MisReservas() {
       const fechaStr = String(reservaSeleccionada.fecha).split("T")[0];
 
       await Api.crearPartido({
-        cancha_id: reservaSeleccionada.cancha_id, // viene de /api/reservas/mis
+        cancha_id: reservaSeleccionada.cancha_id,
         fecha: fechaStr,
         hora_inicio: reservaSeleccionada.hora_inicio?.slice(0, 5),
         hora_fin: reservaSeleccionada.hora_fin?.slice(0, 5),
@@ -210,18 +217,90 @@ export default function MisReservas() {
     }
   };
 
+  // 🗑 Borrar UNA reserva pasada (del historial)
+  const handleEliminarReservaPasada = async (id) => {
+    if (
+      !window.confirm(
+        "¿Seguro que quieres borrar esta reserva del historial? Esta acción no se puede deshacer."
+      )
+    )
+      return;
+
+    try {
+      await Api.eliminarReserva(id); // DELETE /api/reservas/:id
+      setReservas((prev) => prev.filter((r) => r.id !== id));
+      if (detalleReserva && detalleReserva.id === id) {
+        setDetalleReserva(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "No se pudo borrar la reserva.");
+    }
+  };
+
+  // 🧹 Borrar TODAS las reservas pasadas
+  const handleEliminarTodasPasadas = async () => {
+    if (!pasadas.length) return;
+
+    if (
+      !window.confirm(
+        `Vas a borrar ${pasadas.length} reserva${
+          pasadas.length === 1 ? "" : "s"
+        } del historial. ¿Estás seguro?`
+      )
+    )
+      return;
+
+    try {
+      await Api.eliminarReservasPasadas(); // DELETE /api/reservas/mis/pasadas
+      const idsPasadas = new Set(pasadas.map((r) => r.id));
+      setReservas((prev) => prev.filter((r) => !idsPasadas.has(r.id)));
+      if (detalleReserva && idsPasadas.has(detalleReserva.id)) {
+        setDetalleReserva(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(
+        err.message ||
+          "No se pudieron borrar las reservas pasadas. Inténtalo de nuevo."
+      );
+    }
+  };
+
   return (
     <div style={pageBg}>
-      <div style={card}>
+      {/* Botón Inicio flotante */}
+      <motion.button
+        type="button"
+        onClick={() => navigate("/")}
+        style={homeBtn}
+        whileHover={{ scale: 1.05, x: 2 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Home size={18} />
+        <span>Inicio</span>
+      </motion.button>
+
+      <motion.div
+        style={card}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+      >
         {/* Barra superior */}
         <div style={topRow}>
           <button onClick={() => navigate(-1)} style={backBtn}>
             ⬅ Volver
           </button>
           <h1 style={titleText}>Mis reservas</h1>
-          <button onClick={goReservar} style={primaryMiniBtn}>
+          <motion.button
+            onClick={goReservar}
+            style={primaryMiniBtn}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.96 }}
+          >
             Reservar cancha ⚽
-          </button>
+          </motion.button>
         </div>
 
         {loading && (
@@ -235,22 +314,27 @@ export default function MisReservas() {
         )}
 
         {!loading && !errorMsg && reservas.length === 0 && (
-          <div style={emptyBox}>
+          <motion.div
+            style={emptyBox}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             <p style={{ margin: 0, fontSize: "0.9rem", color: "#ffe6f3" }}>
               Aún no tienes reservas registradas.
             </p>
-            <button style={primaryBtn} onClick={goReservar}>
+            <motion.button
+              style={primaryBtn}
+              onClick={goReservar}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
               Hacer mi primera reserva 💥
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {!loading && !errorMsg && reservas.length > 0 && (
-          <div
-            style={
-              detalleReserva ? layoutWithDetail : layoutSingleCol
-            }
-          >
+          <div style={layoutWithDetail}>
             {/* 🧱 Columna izquierda: listas de reservas */}
             <div style={listColumn}>
               {/* Próximas reservas */}
@@ -269,60 +353,78 @@ export default function MisReservas() {
                   </p>
                 ) : (
                   <div style={listContainer}>
-                    {futuras.map((r) => (
-                      <div
-                        key={r.id}
-                        style={
-                          detalleReserva && detalleReserva.id === r.id
-                            ? {
-                                ...reservaCard,
-                                boxShadow:
-                                  "0 0 0 2px rgba(150,255,210,.9)",
-                              }
-                            : reservaCard
-                        }
-                        onClick={() => setDetalleReserva(r)} // 🆕 abre detalle lateral
-                      >
-                        <div style={reservaTopRow}>
-                          <div>
-                            <div style={canchaName}>
-                              {r.cancha_nombre || "Cancha sin nombre"}
+                    {futuras.map((r, index) => {
+                      const isSelected =
+                        detalleReserva && detalleReserva.id === r.id;
+                      const styleCard = isSelected
+                        ? {
+                            ...reservaCard,
+                            boxShadow:
+                              "0 0 0 2px rgba(150,255,210,.9)",
+                          }
+                        : reservaCard;
+                      return (
+                        <motion.div
+                          key={r.id}
+                          style={styleCard}
+                          onClick={() => setDetalleReserva(r)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{
+                            y: -2,
+                            boxShadow: isSelected
+                              ? "0 0 0 2px rgba(150,255,210,.9)"
+                              : "0 0 12px rgba(150,255,210,.6)",
+                          }}
+                        >
+                          <div style={reservaTopRow}>
+                            <div>
+                              <div style={canchaName}>
+                                {r.cancha_nombre || "Cancha sin nombre"}
+                              </div>
+                              <div style={fechaText}>
+                                {formatFechaLarga(r.fecha)} ·{" "}
+                                {r.hora_inicio?.slice(0, 5)} –{" "}
+                                {r.hora_fin?.slice(0, 5)}
+                              </div>
                             </div>
-                            <div style={fechaText}>
-                              {formatFechaLarga(r.fecha)} ·{" "}
-                              {r.hora_inicio?.slice(0, 5)} –{" "}
-                              {r.hora_fin?.slice(0, 5)}
-                            </div>
+                            <span style={estadoChipStyle(r.estado)}>
+                              {r.estado || "sin estado"}
+                            </span>
                           </div>
-                          <span style={estadoChipStyle(r.estado)}>
-                            {r.estado || "sin estado"}
-                          </span>
-                        </div>
 
-                        <div style={reservaBottomRow}>
-                          <span style={ubicacionText}>
-                            📍 {r.ubicacion || "Ubicación no especificada"}
-                          </span>
-                          <span style={montoText}>
-                            {CLP.format(Number(r.monto_total || 0))}
-                          </span>
-                        </div>
+                          <div style={reservaBottomRow}>
+                            <span style={ubicacionText}>
+                              📍{" "}
+                              {r.ubicacion || "Ubicación no especificada"}
+                            </span>
+                            <span style={montoText}>
+                              {CLP.format(Number(r.monto_total || 0))}
+                            </span>
+                          </div>
 
-                        {/* 🔥 Acción "Me falta uno" solo para futuras */}
-                        <div style={reservaActionsRow}>
-                          <button
-                            type="button"
-                            style={meFaltaUnoBtn}
-                            onClick={(e) => {
-                              e.stopPropagation(); // ⛔ que no dispare también el detalle
-                              handleAbrirModalPartido(r);
-                            }}
-                          >
-                            Me falta uno / Publicar partido ⚽
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                          {/* 🔥 Acción "Me falta uno" solo para futuras */}
+                          <div style={reservaActionsRow}>
+                            <motion.button
+                              type="button"
+                              style={meFaltaUnoBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAbrirModalPartido(r);
+                              }}
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.96 }}
+                            >
+                              Me falta uno / Publicar partido ⚽
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -331,10 +433,29 @@ export default function MisReservas() {
               <section style={sectionBlock}>
                 <div style={sectionHeader}>
                   <h2 style={sectionTitle}>Historial</h2>
-                  <span style={sectionChip}>
-                    {pasadas.length}{" "}
-                    {pasadas.length === 1 ? "reserva" : "reservas"}
-                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <span style={sectionChip}>
+                      {pasadas.length}{" "}
+                      {pasadas.length === 1 ? "reserva" : "reservas"}
+                    </span>
+                    {pasadas.length > 0 && (
+                      <motion.button
+                        type="button"
+                        style={clearAllBtn}
+                        onClick={handleEliminarTodasPasadas}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.96 }}
+                      >
+                        Borrar todo
+                      </motion.button>
+                    )}
+                  </div>
                 </div>
 
                 {pasadas.length === 0 ? (
@@ -343,239 +464,323 @@ export default function MisReservas() {
                   </p>
                 ) : (
                   <div style={listContainer}>
-                    {pasadas.map((r) => (
-                      <div
-                        key={r.id}
-                        style={
-                          detalleReserva && detalleReserva.id === r.id
-                            ? {
-                                ...reservaCardPast,
-                                boxShadow:
-                                  "0 0 0 2px rgba(255,105,180,.9)",
-                              }
-                            : reservaCardPast
-                        }
-                        onClick={() => setDetalleReserva(r)}
-                      >
-                        <div style={reservaTopRow}>
-                          <div>
-                            <div style={canchaName}>
-                              {r.cancha_nombre || "Cancha sin nombre"}
+                    {pasadas.map((r, index) => {
+                      const isSelected =
+                        detalleReserva && detalleReserva.id === r.id;
+                      const styleCard = isSelected
+                        ? {
+                            ...reservaCardPast,
+                            boxShadow:
+                              "0 0 0 2px rgba(255,105,180,.9)",
+                          }
+                        : reservaCardPast;
+                      return (
+                        <motion.div
+                          key={r.id}
+                          style={styleCard}
+                          onClick={() => setDetalleReserva(r)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{
+                            y: -2,
+                            boxShadow: isSelected
+                              ? "0 0 0 2px rgba(255,105,180,.9)"
+                              : "0 0 12px rgba(255,105,180,.6)",
+                          }}
+                        >
+                          <div style={reservaTopRow}>
+                            <div>
+                              <div style={canchaName}>
+                                {r.cancha_nombre || "Cancha sin nombre"}
+                              </div>
+                              <div style={fechaText}>
+                                {formatFechaLarga(r.fecha)} ·{" "}
+                                {r.hora_inicio?.slice(0, 5)} –{" "}
+                                {r.hora_fin?.slice(0, 5)}
+                              </div>
                             </div>
-                            <div style={fechaText}>
-                              {formatFechaLarga(r.fecha)} ·{" "}
-                              {r.hora_inicio?.slice(0, 5)} –{" "}
-                              {r.hora_fin?.slice(0, 5)}
-                            </div>
+                            <span style={estadoChipStyle(r.estado)}>
+                              {r.estado || "sin estado"}
+                            </span>
                           </div>
-                          <span style={estadoChipStyle(r.estado)}>
-                            {r.estado || "sin estado"}
-                          </span>
-                        </div>
 
-                        <div style={reservaBottomRow}>
-                          <span style={ubicacionText}>
-                            📍 {r.ubicacion || "Ubicación no especificada"}
-                          </span>
-                          <span style={montoText}>
-                            {CLP.format(Number(r.monto_total || 0))}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                          <div style={reservaBottomRow}>
+                            <span style={ubicacionText}>
+                              📍{" "}
+                              {r.ubicacion || "Ubicación no especificada"}
+                            </span>
+                            <span style={montoText}>
+                              {CLP.format(Number(r.monto_total || 0))}
+                            </span>
+                          </div>
+
+                          {/* 🗑 Botón borrar SOLO en historial */}
+                          <div style={reservaActionsRow}>
+                            <motion.button
+                              type="button"
+                              style={deleteOneBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEliminarReservaPasada(r.id);
+                              }}
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.96 }}
+                            >
+                              Borrar del historial 🗑
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </section>
             </div>
 
             {/* 🧱 Columna derecha: panel lateral de detalle */}
-            {detalleReserva && (
-              <div style={detailColumn}>
-                <section style={detalleBlock}>
-                  <div style={sectionHeader}>
-                    <h2 style={sectionTitle}>Detalle de la reserva</h2>
-                    <button
-                      type="button"
-                      style={detalleCloseBtn}
-                      onClick={() => setDetalleReserva(null)}
-                    >
-                      Cerrar
-                    </button>
-                  </div>
+            <div style={detailColumn}>
+              <AnimatePresence mode="wait">
+                {detalleReserva ? (
+                  <motion.section
+                    key={detalleReserva.id}
+                    style={detalleBlock}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div style={sectionHeader}>
+                      <h2 style={sectionTitle}>Detalle de la reserva</h2>
+                      <button
+                        type="button"
+                        style={detalleCloseBtn}
+                        onClick={() => setDetalleReserva(null)}
+                      >
+                        Cerrar
+                      </button>
+                    </div>
 
-                  <div style={detalleGrid}>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>ID reserva</span>
-                      <span style={detalleValue}>#{detalleReserva.id}</span>
+                    <div style={detalleGrid}>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>ID reserva</span>
+                        <span style={detalleValue}>
+                          #{detalleReserva.id}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Cancha</span>
+                        <span style={detalleValue}>
+                          {detalleReserva.cancha_nombre ||
+                            "Cancha sin nombre"}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Ubicación</span>
+                        <span style={detalleValue}>
+                          {detalleReserva.ubicacion ||
+                            "Ubicación no especificada"}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Fecha</span>
+                        <span style={detalleValue}>
+                          {formatFechaLarga(detalleReserva.fecha)}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Horario</span>
+                        <span style={detalleValue}>
+                          {detalleReserva.hora_inicio?.slice(0, 5)} –{" "}
+                          {detalleReserva.hora_fin?.slice(0, 5)}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Estado</span>
+                        <span style={detalleValue}>
+                          {detalleReserva.estado || "sin estado"}
+                        </span>
+                      </div>
+                      <div style={detalleRow}>
+                        <span style={detalleLabel}>Monto total</span>
+                        <span style={detalleValue}>
+                          {CLP.format(
+                            Number(detalleReserva.monto_total || 0)
+                          )}
+                        </span>
+                      </div>
                     </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Cancha</span>
-                      <span style={detalleValue}>
-                        {detalleReserva.cancha_nombre || "Cancha sin nombre"}
-                      </span>
-                    </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Ubicación</span>
-                      <span style={detalleValue}>
-                        {detalleReserva.ubicacion ||
-                          "Ubicación no especificada"}
-                      </span>
-                    </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Fecha</span>
-                      <span style={detalleValue}>
-                        {formatFechaLarga(detalleReserva.fecha)}
-                      </span>
-                    </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Horario</span>
-                      <span style={detalleValue}>
-                        {detalleReserva.hora_inicio?.slice(0, 5)} –{" "}
-                        {detalleReserva.hora_fin?.slice(0, 5)}
-                      </span>
-                    </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Estado</span>
-                      <span style={detalleValue}>
-                        {detalleReserva.estado || "sin estado"}
-                      </span>
-                    </div>
-                    <div style={detalleRow}>
-                      <span style={detalleLabel}>Monto total</span>
-                      <span style={detalleValue}>
-                        {CLP.format(Number(detalleReserva.monto_total || 0))}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div style={detalleButtonsRow}>
-                    <button
-                      type="button"
-                      style={detalleCanchaBtn}
-                      onClick={() =>
-                        navigate(`/cancha/${detalleReserva.cancha_id}`)
-                      }
-                    >
-                      Ver cancha 🏟
-                    </button>
-                  </div>
+                    <div style={detalleButtonsRow}>
+                      <motion.button
+                        type="button"
+                        style={detalleCanchaBtn}
+                        onClick={() =>
+                          navigate(`/cancha/${detalleReserva.cancha_id}`)
+                        }
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.96 }}
+                      >
+                        Ver cancha 🏟
+                      </motion.button>
+                    </div>
 
-                  <p style={detalleHint}>
-                    Más adelante aquí puedes agregar acciones como{" "}
-                    <strong>ver comprobante</strong>,{" "}
-                    <strong>cancelar</strong> o <strong>repetir reserva</strong>.
-                  </p>
-                </section>
-              </div>
-            )}
+                    <p style={detalleHint}>
+                      Más adelante aquí puedes agregar acciones como{" "}
+                      <strong>ver comprobante</strong>,{" "}
+                      <strong>cancelar</strong> o{" "}
+                      <strong>repetir reserva</strong>.
+                    </p>
+                  </motion.section>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    style={detalleEmptyBox}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <p style={detalleEmptyText}>
+                      Selecciona una reserva de la lista de la izquierda
+                      para ver aquí todos los detalles.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
+      </motion.div>
 
-      </div>
-
-      {/* 🧾 MODAL "ME FALTA UNO" (YA CONECTADO A BACKEND) */}
-      {modalPartidoOpen && reservaSeleccionada && (
-        <div style={modalOverlay}>
-          <div style={modalCard}>
-            <div style={modalHeader}>
-              <h2 style={modalTitle}>Publicar partido desde esta reserva</h2>
-              <button style={modalCloseBtn} onClick={handleCerrarModal}>
-                ✕
-              </button>
-            </div>
-
-            <p style={modalSubtext}>
-              Publica este partido para que otros jugadores lo encuentren en{" "}
-              <strong>“Buscar partido”</strong>.
-            </p>
-
-            <div style={modalReservaBox}>
-              <div style={modalReservaLine}>
-                <span style={modalReservaLabel}>Cancha</span>
-                <span style={modalReservaValue}>
-                  {reservaSeleccionada.cancha_nombre || "Cancha sin nombre"}
-                </span>
+      {/* 🧾 MODAL "ME FALTA UNO" */}
+      <AnimatePresence>
+        {modalPartidoOpen && reservaSeleccionada && (
+          <motion.div
+            style={modalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              style={modalCard}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div style={modalHeader}>
+                <h2 style={modalTitle}>
+                  Publicar partido desde esta reserva
+                </h2>
+                <button style={modalCloseBtn} onClick={handleCerrarModal}>
+                  ✕
+                </button>
               </div>
-              <div style={modalReservaLine}>
-                <span style={modalReservaLabel}>Fecha</span>
-                <span style={modalReservaValue}>
-                  {formatFechaLarga(reservaSeleccionada.fecha)}
-                </span>
-              </div>
-              <div style={modalReservaLine}>
-                <span style={modalReservaLabel}>Horario</span>
-                <span style={modalReservaValue}>
-                  {reservaSeleccionada.hora_inicio?.slice(0, 5)} –{" "}
-                  {reservaSeleccionada.hora_fin?.slice(0, 5)}
-                </span>
-              </div>
-              <div style={modalReservaLine}>
-                <span style={modalReservaLabel}>Ubicación</span>
-                <span style={modalReservaValue}>
-                  {reservaSeleccionada.ubicacion ||
-                    "Ubicación no especificada"}
-                </span>
-              </div>
-            </div>
 
-            <div style={modalFieldGroup}>
-              <label style={modalLabel}>Vacantes disponibles</label>
-              <input
-                type="number"
-                min={1}
-                max={15}
-                value={vacantes}
-                onChange={(e) =>
-                  setVacantes(Math.max(1, Number(e.target.value) || 1))
-                }
-                style={modalInput}
-                disabled={publicando}
-              />
-              <p style={modalHint}>
-                Ej: si te faltan 2 jugadores, coloca <strong>2</strong>.
+              <p style={modalSubtext}>
+                Publica este partido para que otros jugadores lo
+                encuentren en <strong>“Buscar partido”</strong>.
               </p>
-            </div>
 
-            <div style={modalFieldGroup}>
-              <label style={modalLabel}>Descripción del partido</label>
-              <textarea
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                style={modalTextarea}
-                placeholder="Ej: Partido tranqui, nivel intermedio, pasto sintético, traer camiseta blanca..."
-                disabled={publicando}
-              />
-            </div>
+              <div style={modalReservaBox}>
+                <div style={modalReservaLine}>
+                  <span style={modalReservaLabel}>Cancha</span>
+                  <span style={modalReservaValue}>
+                    {reservaSeleccionada.cancha_nombre ||
+                      "Cancha sin nombre"}
+                  </span>
+                </div>
+                <div style={modalReservaLine}>
+                  <span style={modalReservaLabel}>Fecha</span>
+                  <span style={modalReservaValue}>
+                    {formatFechaLarga(reservaSeleccionada.fecha)}
+                  </span>
+                </div>
+                <div style={modalReservaLine}>
+                  <span style={modalReservaLabel}>Horario</span>
+                  <span style={modalReservaValue}>
+                    {reservaSeleccionada.hora_inicio?.slice(0, 5)} –{" "}
+                    {reservaSeleccionada.hora_fin?.slice(0, 5)}
+                  </span>
+                </div>
+                <div style={modalReservaLine}>
+                  <span style={modalReservaLabel}>Ubicación</span>
+                  <span style={modalReservaValue}>
+                    {reservaSeleccionada.ubicacion ||
+                      "Ubicación no especificada"}
+                  </span>
+                </div>
+              </div>
 
-            <div style={modalButtonsRow}>
-              <button
-                style={modalPrimaryBtn}
-                onClick={handlePublicarPartido}
-                disabled={publicando}
-              >
-                {publicando ? "Publicando..." : "Publicar partido ⚽"}
-              </button>
-              <button
-                style={modalGhostBtn}
-                onClick={handleCerrarModal}
-                disabled={publicando}
-              >
-                Cancelar
-              </button>
-            </div>
+              <div style={modalFieldGroup}>
+                <label style={modalLabel}>Vacantes disponibles</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={15}
+                  value={vacantes}
+                  onChange={(e) =>
+                    setVacantes(Math.max(1, Number(e.target.value) || 1))
+                  }
+                  style={modalInput}
+                  disabled={publicando}
+                />
+                <p style={modalHint}>
+                  Ej: si te faltan 2 jugadores, coloca{" "}
+                  <strong>2</strong>.
+                </p>
+              </div>
 
-            <p style={modalFooterNote}>
-              Este partido se guarda en la tabla <code>partidos</code> y luego
-              lo listamos en <strong>Buscar partido / Resultados</strong>.
-            </p>
-          </div>
-        </div>
-      )}
+              <div style={modalFieldGroup}>
+                <label style={modalLabel}>Descripción del partido</label>
+                <textarea
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  style={modalTextarea}
+                  placeholder="Ej: Partido tranqui, nivel intermedio, pasto sintético, traer camiseta blanca..."
+                  disabled={publicando}
+                />
+              </div>
+
+              <div style={modalButtonsRow}>
+                <motion.button
+                  style={modalPrimaryBtn}
+                  onClick={handlePublicarPartido}
+                  disabled={publicando}
+                  whileHover={{ scale: publicando ? 1 : 1.03 }}
+                  whileTap={{ scale: publicando ? 1 : 0.96 }}
+                >
+                  {publicando ? "Publicando..." : "Publicar partido ⚽"}
+                </motion.button>
+                <motion.button
+                  style={modalGhostBtn}
+                  onClick={handleCerrarModal}
+                  disabled={publicando}
+                  whileHover={{ scale: publicando ? 1 : 1.03 }}
+                  whileTap={{ scale: publicando ? 1 : 0.96 }}
+                >
+                  Cancelar
+                </motion.button>
+              </div>
+
+              <p style={modalFooterNote}>
+                Este partido se guarda en la tabla <code>partidos</code> y
+                luego lo listamos en{" "}
+                <strong>Buscar partido / Resultados</strong>.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-/* ===== estilos inline (match Ballantines) ===== */
+/* ===== estilos inline (Ballantines) ===== */
 
 const pageBg = {
   minHeight: "100vh",
@@ -586,6 +791,7 @@ const pageBg = {
   backgroundPosition: "center",
   display: "flex",
   justifyContent: "center",
+  position: "relative",
 };
 
 const card = {
@@ -597,6 +803,26 @@ const card = {
   border: "1px solid rgba(255,105,180,.5)",
   boxShadow: "0 22px 60px rgba(0,0,0,.95)",
   backdropFilter: "blur(10px)",
+};
+
+/* Botón Inicio */
+const homeBtn = {
+  position: "absolute",
+  top: 24,
+  left: 24,
+  cursor: "pointer",
+  color: "#ffb3e1",
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontWeight: "bold",
+  zIndex: 20,
+  padding: "6px 12px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,105,180,0.8)",
+  background:
+    "radial-gradient(circle at top left, rgba(255,105,180,.25), rgba(0,0,0,.95))",
+  fontSize: "0.85rem",
 };
 
 const topRow = {
@@ -631,8 +857,7 @@ const primaryMiniBtn = {
   padding: "6px 14px",
   borderRadius: 999,
   border: "none",
-  background:
-    "linear-gradient(135deg, #ff61b6, #ffb3e1, #ff61b6)",
+  background: "linear-gradient(135deg, #ff61b6, #ffb3e1, #ff61b6)",
   color: "#2b0018",
   fontWeight: 700,
   fontSize: "0.8rem",
@@ -656,8 +881,7 @@ const primaryBtn = {
   padding: "8px 16px",
   borderRadius: 999,
   border: "none",
-  background:
-    "linear-gradient(135deg, #ff61b6, #ffb3e1, #ff61b6)",
+  background: "linear-gradient(135deg, #ff61b6, #ffb3e1, #ff61b6)",
   color: "#2b0018",
   fontWeight: 700,
   fontSize: "0.9rem",
@@ -790,19 +1014,36 @@ const meFaltaUnoBtn = {
   letterSpacing: "0.04em",
 };
 
-/* ===== layout para panel lateral ===== */
+const clearAllBtn = {
+  padding: "4px 10px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,105,180,.7)",
+  background: "rgba(60,0,40,.95)",
+  color: "#ffd5ec",
+  fontSize: "0.78rem",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+const deleteOneBtn = {
+  padding: "4px 10px",
+  borderRadius: 999,
+  border: "1px solid rgba(255,120,150,.9)",
+  background: "rgba(80,0,30,.96)",
+  color: "#ffd5ec",
+  fontSize: "0.78rem",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+/* ===== layout para panel lateral (como MisPartidos) ===== */
 
 const layoutWithDetail = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, 2.1fr) minmax(0, 1.5fr)",
+  gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1.1fr)",
   gap: 18,
   alignItems: "flex-start",
-};
-
-const layoutSingleCol = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 18,
+  marginTop: 10,
 };
 
 const listColumn = {
@@ -825,7 +1066,7 @@ const detalleBlock = {
   border: "1px solid rgba(150,255,210,.4)",
   color: "#eafff6",
   position: "sticky",
-  top: 80, // se queda “pegado” mientras haces scroll
+  top: 80,
 };
 
 const detalleGrid = {
@@ -861,8 +1102,7 @@ const detalleCanchaBtn = {
   padding: "6px 14px",
   borderRadius: 999,
   border: "1px solid rgba(150,255,210,.9)",
-  background:
-    "linear-gradient(135deg, #6dffbf, #c9ffe6)",
+  background: "linear-gradient(135deg, #6dffbf, #c9ffe6)",
   color: "#02150b",
   fontWeight: 700,
   fontSize: "0.8rem",
@@ -886,6 +1126,23 @@ const detalleCloseBtn = {
   fontSize: "0.78rem",
   cursor: "pointer",
   fontWeight: 600,
+};
+
+const detalleEmptyBox = {
+  borderRadius: 18,
+  padding: 14,
+  background:
+    "linear-gradient(145deg, rgba(10,0,25,.96), rgba(0,0,0,.98))",
+  border: "1px dashed rgba(255,105,180,.6)",
+  color: "#ffe6f3",
+  fontSize: "0.86rem",
+  position: "sticky",
+  top: 80,
+};
+
+const detalleEmptyText = {
+  margin: 0,
+  opacity: 0.9,
 };
 
 /* ===== Modal estilos ===== */
@@ -1023,8 +1280,7 @@ const modalPrimaryBtn = {
   padding: "8px 16px",
   borderRadius: 999,
   border: "none",
-  background:
-    "linear-gradient(135deg, #6dffbf, #c9ffe6, #6dffbf)",
+  background: "linear-gradient(135deg, #6dffbf, #c9ffe6, #6dffbf)",
   color: "#02150b",
   fontWeight: 800,
   fontSize: "0.9rem",

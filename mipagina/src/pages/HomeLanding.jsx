@@ -14,7 +14,9 @@ export default function HomeLanding() {
       !!localStorage.getItem("token");
     const emailLS = localStorage.getItem("userEmail") || "";
     let u = {};
-    try { u = JSON.parse(localStorage.getItem("user") || "{}"); } catch {}
+    try {
+      u = JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {}
     const email = u?.email || emailLS;
     const r = u?.tipo || localStorage.getItem("userRole") || "";
     setIsAuthenticated(auth);
@@ -45,7 +47,12 @@ export default function HomeLanding() {
   const BTN_H = 36;
 
   return (
-    <div style={{ scrollBehavior: "smooth", fontFamily: "'Poppins', sans-serif" }}>
+    <div
+      style={{
+        scrollBehavior: "smooth",
+        fontFamily: "'Poppins', sans-serif",
+      }}
+    >
       <link
         href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rubik+Wet+Paint&display=swap"
         rel="stylesheet"
@@ -66,20 +73,45 @@ export default function HomeLanding() {
           justifyContent: "space-between",
           paddingLeft: 28,
           paddingRight: 28 + RIGHT_SAFE,
-          background: "linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.58))",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,.78), rgba(0,0,0,.58))",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
           borderBottom: "1px solid rgba(255,105,180,.35)",
-          boxShadow: "0 8px 22px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.05)",
+          boxShadow:
+            "0 8px 22px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.05)",
         }}
       >
-        {/* Logo + marca */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-            alt="logo"
-            style={{ width: 40, height: 40 }}
-          />
+        {/* Logo + marca (SOLO ESTO CAMBIÉ) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "999px",
+              background:
+                "radial-gradient(circle at 30% 0%, #ff8fd6 0, #ff2e93 38%, #2b003b 70%, #050008 100%)",
+              boxShadow:
+                "0 0 0 1px rgba(255,255,255,.16), 0 0 14px rgba(255, 70, 178, .85)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+              alt="logo"
+              style={{ width: 24, height: 24 }}
+            />
+          </div>
           <span
             style={{
               fontFamily: "'Bebas Neue', cursive",
@@ -95,7 +127,7 @@ export default function HomeLanding() {
           </span>
         </div>
 
-        {/* Acciones derecha */}
+        {/* Acciones derecha (igual que antes) */}
         <nav
           style={{
             display: "flex",
@@ -128,7 +160,12 @@ export default function HomeLanding() {
                 }}
               >
                 <span style={{ fontSize: 16, color: "#c9a0b5" }}>👤</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {userEmail || "Sesión iniciada"}
                 </span>
               </span>
@@ -153,7 +190,11 @@ export default function HomeLanding() {
 
               {/* Ver Perfil */}
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/perfil"); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate("/perfil");
+                }}
                 className="btn-anim btn-rose"
                 style={{
                   height: BTN_H,
@@ -167,7 +208,7 @@ export default function HomeLanding() {
                   overflow: "hidden",
                   lineHeight: 1,
                   boxSizing: "border-box",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Ver Perfil
@@ -175,7 +216,11 @@ export default function HomeLanding() {
 
               {/* Cerrar Sesión */}
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLogout();
+                }}
                 className="btn-anim btn-red"
                 style={{
                   height: BTN_H,
@@ -199,7 +244,11 @@ export default function HomeLanding() {
             <>
               {/* Iniciar Sesión */}
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/login"); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate("/login");
+                }}
                 className="btn-anim btn-rose"
                 style={{
                   height: BTN_H,
@@ -214,7 +263,7 @@ export default function HomeLanding() {
                   lineHeight: 1,
                   boxSizing: "border-box",
                   cursor: "pointer",
-                  marginTop: 8
+                  marginTop: 8,
                 }}
               >
                 Iniciar Sesión
@@ -222,7 +271,11 @@ export default function HomeLanding() {
 
               {/* Registrarse */}
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/register"); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate("/register");
+                }}
                 className="btn-anim btn-green"
                 style={{
                   height: BTN_H,
@@ -236,7 +289,7 @@ export default function HomeLanding() {
                   overflow: "hidden",
                   lineHeight: 1,
                   boxSizing: "border-box",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Registrarse
@@ -322,15 +375,19 @@ export default function HomeLanding() {
                 maxWidth: 520,
               }}
             >
-              Con <strong>TeamUp</strong> podrás reservar canchas de fútbol en los clubes que
-              elijas, encontrar el mejor horario y sumarte al partido perfecto con tus amigos
-              o nuevos equipos.
+              Con <strong>TeamUp</strong> podrás reservar canchas de fútbol en los
+              clubes que elijas, encontrar el mejor horario y sumarte al partido
+              perfecto con tus amigos o nuevos equipos.
             </p>
 
             <div style={{ marginBottom: 22 }}>
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/reservar"); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate("/reservar");
+                }}
                 className="btn-primary"
                 style={{
                   display: "inline-block",
@@ -341,7 +398,7 @@ export default function HomeLanding() {
                   fontWeight: 700,
                   textDecoration: "none",
                   boxShadow: "0 6px 18px rgba(255,105,180,.35)",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Reserva tu cancha aquí
@@ -409,7 +466,8 @@ export default function HomeLanding() {
             Lo que puedes hacer en TeamUp
           </h2>
           <p style={{ marginBottom: 34, color: "#ddd" }}>
-            Reserva, busca partidos, revisa tus reservas y sigue tus partidos en un solo lugar.
+            Reserva, busca partidos, revisa tus reservas y sigue tus partidos en un
+            solo lugar.
           </p>
 
           <div
@@ -420,25 +478,40 @@ export default function HomeLanding() {
             }}
           >
             {/* Reservar */}
-            <div className="feature-card" style={{
-              background: "#1a1a1a",
-              borderRadius: 18,
-              padding: "24px 20px 28px",
-              boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              position: "relative"
-            }}>
+            <div
+              className="feature-card"
+              style={{
+                background: "#1a1a1a",
+                borderRadius: 18,
+                padding: "24px 20px 28px",
+                boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>🏟</div>
               <h3 style={{ marginBottom: 8 }}>Reservar cancha</h3>
-              <p style={{ fontSize: ".95rem", marginBottom: 16, color: "#ddd", textAlign: "center" }}>
-                Elige el club, la hora y el tipo de cancha que quieras. Reserva en segundos.
+              <p
+                style={{
+                  fontSize: ".95rem",
+                  marginBottom: 16,
+                  color: "#ddd",
+                  textAlign: "center",
+                }}
+              >
+                Elige el club, la hora y el tipo de cancha que quieras. Reserva en
+                segundos.
               </p>
               <div style={{ marginTop: "auto" }}>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/reservar"); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate("/reservar");
+                  }}
                   className="btn-green card-cta"
                   style={{ cursor: "pointer", position: "relative", zIndex: 2 }}
                 >
@@ -448,25 +521,40 @@ export default function HomeLanding() {
             </div>
 
             {/* Buscar */}
-            <div className="feature-card" style={{
-              background: "#1a1a1a",
-              borderRadius: 18,
-              padding: "24px 20px 28px",
-              boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              position: "relative"
-            }}>
+            <div
+              className="feature-card"
+              style={{
+                background: "#1a1a1a",
+                borderRadius: 18,
+                padding: "24px 20px 28px",
+                boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>⚽</div>
               <h3 style={{ marginBottom: 8 }}>Buscar partido</h3>
-              <p style={{ fontSize: ".95rem", marginBottom: 16, color: "#ddd", textAlign: "center" }}>
-                Encuentra partidos abiertos cerca de ti o arma el tuyo con tus amigos.
+              <p
+                style={{
+                  fontSize: ".95rem",
+                  marginBottom: 16,
+                  color: "#ddd",
+                  textAlign: "center",
+                }}
+              >
+                Encuentra partidos abiertos cerca de ti o arma el tuyo con tus
+                amigos.
               </p>
               <div style={{ marginTop: "auto" }}>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/buscar"); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate("/buscar");
+                  }}
                   className="btn-green card-cta"
                   style={{ cursor: "pointer", position: "relative", zIndex: 2 }}
                 >
@@ -476,20 +564,31 @@ export default function HomeLanding() {
             </div>
 
             {/* Publicar (bloqueo si no es dueño) */}
-            <div className="feature-card" style={{
-              background: "#1a1a1a",
-              borderRadius: 18,
-              padding: "24px 20px 28px",
-              boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              position: "relative"
-            }}>
+            <div
+              className="feature-card"
+              style={{
+                background: "#1a1a1a",
+                borderRadius: 18,
+                padding: "24px 20px 28px",
+                boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>📢</div>
               <h3 style={{ marginBottom: 8 }}>Publicar tu cancha</h3>
-              <p style={{ fontSize: ".95rem", marginBottom: 16, color: "#ddd", textAlign: "center" }}>
-                Si administras un complejo, súmate a TeamUp y llena tus horarios vacíos.
+              <p
+                style={{
+                  fontSize: ".95rem",
+                  marginBottom: 16,
+                  color: "#ddd",
+                  textAlign: "center",
+                }}
+              >
+                Si administras un complejo, súmate a TeamUp y llena tus horarios
+                vacíos.
               </p>
               <div style={{ marginTop: "auto" }}>
                 <button
@@ -498,7 +597,9 @@ export default function HomeLanding() {
                     e.preventDefault();
                     e.stopPropagation();
                     if (role !== "dueno") {
-                      alert("Para publicar debes tener una cuenta de tipo DUEÑO.");
+                      alert(
+                        "Para publicar debes tener una cuenta de tipo DUEÑO."
+                      );
                       return;
                     }
                     navigate("/publicar");
@@ -508,7 +609,7 @@ export default function HomeLanding() {
                     cursor: role !== "dueno" ? "not-allowed" : "pointer",
                     opacity: role !== "dueno" ? 0.95 : 1,
                     position: "relative",
-                    zIndex: 2
+                    zIndex: 2,
                   }}
                 >
                   Publicar
@@ -517,25 +618,40 @@ export default function HomeLanding() {
             </div>
 
             {/* ⭐ Mis reservas */}
-            <div className="feature-card" style={{
-              background: "#1a1a1a",
-              borderRadius: 18,
-              padding: "24px 20px 28px",
-              boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              position: "relative"
-            }}>
+            <div
+              className="feature-card"
+              style={{
+                background: "#1a1a1a",
+                borderRadius: 18,
+                padding: "24px 20px 28px",
+                boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>🧾</div>
               <h3 style={{ marginBottom: 8 }}>Mis reservas</h3>
-              <p style={{ fontSize: ".95rem", marginBottom: 16, color: "#ddd", textAlign: "center" }}>
-                Revisa tus reservas, horarios y usa el botón “Me falta uno” para publicar partidos.
+              <p
+                style={{
+                  fontSize: ".95rem",
+                  marginBottom: 16,
+                  color: "#ddd",
+                  textAlign: "center",
+                }}
+              >
+                Revisa tus reservas, horarios y usa el botón “Me falta uno” para
+                publicar partidos.
               </p>
               <div style={{ marginTop: "auto" }}>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/mis-reservas"); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate("/mis-reservas");
+                  }}
                   className="btn-green card-cta"
                   style={{ cursor: "pointer", position: "relative", zIndex: 2 }}
                 >
@@ -545,25 +661,40 @@ export default function HomeLanding() {
             </div>
 
             {/* ⭐ Mis partidos */}
-            <div className="feature-card" style={{
-              background: "#1a1a1a",
-              borderRadius: 18,
-              padding: "24px 20px 28px",
-              boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              position: "relative"
-            }}>
+            <div
+              className="feature-card"
+              style={{
+                background: "#1a1a1a",
+                borderRadius: 18,
+                padding: "24px 20px 28px",
+                boxShadow: "0 4px 18px rgba(255,105,180,0.35)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
               <div style={{ fontSize: "2rem", marginBottom: 10 }}>🤝</div>
               <h3 style={{ marginBottom: 8 }}>Mis partidos</h3>
-              <p style={{ fontSize: ".95rem", marginBottom: 16, color: "#ddd", textAlign: "center" }}>
-                Mira los partidos que organizaste o donde estás inscrito y entra al chat del equipo.
+              <p
+                style={{
+                  fontSize: ".95rem",
+                  marginBottom: 16,
+                  color: "#ddd",
+                  textAlign: "center",
+                }}
+              >
+                Mira los partidos que organizaste o donde estás inscrito y entra al
+                chat del equipo.
               </p>
               <div style={{ marginTop: "auto" }}>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/mis-partidos"); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigate("/mis-partidos");
+                  }}
                   className="btn-green card-cta"
                   style={{ cursor: "pointer", position: "relative", zIndex: 2 }}
                 >
